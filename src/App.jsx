@@ -2,90 +2,90 @@ import { useRos } from './hooks/useRos';
 import { Joystick } from './components/Joystick';
 import { Telemetry } from './components/Telemetry';
 import { Map3D } from './components/Map3D';
-// Novos componentes
 import { LogoUploader } from './components/LogoUploader';
-//import { EStop } from './components/EStop';
-//import { CameraView } from './components/CameraView';
-//import { LogConsole } from './components/LogConsole';
+// import { EStop } from './components/EStop';
+// import { CameraView } from './components/CameraView';
+// import { LogConsole } from './components/LogConsole';
 
 function App() {
   const { isConnected, ip, ros } = useRos();
 
   return (
     <div style={{ 
-      display: 'grid', 
-      gridTemplateColumns: '360px 1fr', // Aumentei um pouco a sidebar (360px)
-      gridTemplateRows: '60px 1fr',     
+      position: 'relative',
       height: '100vh', 
       width: '100vw',
-      background: '#0f111a', 
+      background: '#000', 
+      overflow: 'hidden',
       color: '#eee',
-      overflow: 'hidden'
+      fontFamily: 'system-ui, sans-serif'
     }}>
       
-      {/* 1. HEADER COM LOGO */}
+      {/* --- CAMADA 0: MAPA 3D (Fundo Total) --- */}
+      <div style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        height: '100%', 
+        zIndex: 0 
+      }}>
+        <Map3D ros={ros} />
+      </div>
+
+      {/* --- CAMADA 1: HEADER (Flutuante no topo) --- */}
       <header style={{ 
-        gridColumn: '1 / -1', 
-        background: '#1f2833', 
-        borderBottom: '1px solid #333',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '60px',
+        zIndex: 20, 
+        
+        // Estilo Vidro
+        background: 'rgba(31, 40, 51, 0.85)', 
+        backdropFilter: 'blur(8px)',          
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
         display: 'flex', 
         alignItems: 'center', 
         padding: '0 20px',
-        opacity: 0.6,
         justifyContent: 'space-between',
-        zIndex: 10
+        boxSizing: 'border-box'
       }}>
         <div style={{ display: 'flex', alignItems: 'center' }}>
-          {/* Componente de Logo aqui */}
           <LogoUploader />
-          
           <div>
-            <h1 style={{ margin: 0, fontSize: '1.1rem', letterSpacing: '1px', fontWeight: 'bold' }}>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', letterSpacing: '1px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
               FREEBOTICS STUDIO
             </h1>
-            <span style={{ fontSize: '0.75rem', opacity: 0.7, background: '#000', padding: '2px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
               {ip}
             </span>
           </div>
         </div>
-        
-        <div className={isConnected ? 'online' : 'offline'} style={{ fontSize: '0.8rem', fontWeight: 'bold' }}>
+        <div className={isConnected ? 'online' : 'offline'} style={{ fontSize: '0.8rem', fontWeight: 'bold', textShadow: '0 1px 2px black' }}>
           {isConnected ? '● CONECTADO' : '● DESCONECTADO'}
         </div>
       </header>
 
-      {/* 2. SIDEBAR RECHEADA */}
+      {/* --- CAMADA 2: SIDEBAR (Flutuante na esquerda) --- */}
       <aside style={{ 
-        padding: '15px', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '15px', 
-        overflowY: 'auto',
-        borderRight: '1px solid #222',
-        background: '#13151f',
-        zIndex: 5
+        position: 'absolute',
+        top: '80px',
+        left: '10px',
+        bottom: '20px',
+        width: '340px',
+        height: '500px',
+        zIndex: 10,
       }}>
-        
-        {/*Prioridade Máxima: Botão de Pânico
+        {/* Componentes da Sidebar */}
         {/* <EStop ros={ros} /> */}
-{/*  */}
-        {/*Visualização (Câmera)
         {/* <CameraView /> */}
-
-        {/* Dados e Controle */}
         <Telemetry ros={ros} />
-
-        {/*Logs do Sistema (Fica no rodapé da sidebar)}
         {/* <LogConsole ros={ros} /> */}
 
       </aside>
-
-      {/* 3. MAPA 3D */}
-      <main style={{ position: 'relative', display: 'flex', flexDirection: 'column', width: '100%', height: '100%', overflow: 'hidden' }}>
-        <div style={{ flexGrow: 1, width: '100%', height: '100%', position: 'relative' }}>
-            <Map3D ros={ros} />
-        </div>
-      </main>
+      {/* --- CAMADA 3: JOYSTICK (Já é fixed/flutuante) --- */}
       <Joystick ros={ros} />
     </div>
   );

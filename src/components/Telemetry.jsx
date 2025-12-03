@@ -27,7 +27,7 @@ export function Telemetry({ ros }) {
   }, [ros]);
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'flex' }}>
       
       {/* 1. Velocímetro */}
       <div style={{ marginTop: '-10px', marginBottom: '-5px' }}>

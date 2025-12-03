@@ -106,7 +106,7 @@ export function Joystick({ ros }) {
       position: 'fixed',
       top: '80px',
       right: '20px',
-      zIndex: 1000, // Por cima do mapa
+      zIndex: 1000,
       width: '140px', 
       height: '140px', 
       background: 'radial-gradient(circle, rgba(20,20,30,0.8) 0%, rgba(0,0,0,0.6) 70%)',
