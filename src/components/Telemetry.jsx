@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import { Speedometer } from './Speedometer';
 import { ModeSwitcher } from './ModeSwitcher';
 import { VoltageChart } from './VoltageChart'; // O novo componente turbinado
-
 export function Telemetry({ ros }) {
   // Apenas velocidade aqui (Bateria foi para o VoltageChart)
   const [velocityKmh, setVelocityKmh] = useState(0.0);
@@ -27,7 +26,7 @@ export function Telemetry({ ros }) {
   }, [ros]);
 
   return (
-    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '20px', position: 'flex' }}>
       
       {/* 1. Velocímetro */}
       <div style={{ marginTop: '-10px', marginBottom: '-5px' }}>

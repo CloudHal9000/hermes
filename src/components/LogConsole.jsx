@@ -40,25 +40,14 @@ export function LogConsole({ ros }) {
   };
 
   return (
-    <div style={{ 
-      background: '#0a0c12', 
-      border: '1px solid #333', 
-      borderRadius: '6px', 
-      height: '150px', 
-      overflowY: 'auto',
-      padding: '5px',
-      fontSize: '0.7rem',
-      fontFamily: 'monospace',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '2px'
-    }}>
+    <div style={{ /* estilos iguais */ background: '#0a0c12', border: '1px solid #333', borderRadius: '6px', height: '150px', overflowY: 'auto', padding: '5px', fontSize: '0.65rem', fontFamily: 'monospace', display: 'flex', flexDirection: 'column', gap: '2px' }}>
+      
+      {/* CORREÇÃO AQUI: Removemos o '>' solto ou usamos entidade HTML */}
       <div style={{ position: 'sticky', top: 0, background: '#0a0c12', borderBottom: '1px solid #333', marginBottom: '2px', fontWeight: 'bold', color: '#666' }}>
-        {"> SYSTEM LOGS"}
+        &gt; SYSTEM LOGS
       </div>
 
-      {logs.length === 0 && <span style={{opacity:0.3, fontStyle:'italic'}}>Aguardando logs...</span>}
-
+      {/* ... resto igual */}
       {logs.map((log, i) => (
         <div key={i} style={{ color: getColor(log.level), wordBreak: 'break-all' }}>
            <span style={{ opacity: 0.5 }}>[{new Date().toLocaleTimeString()}]</span> {log.msg}

@@ -41,9 +41,9 @@ export function VoltageChart({ ros }) {
   // Cor baseada na porcentagem (Barra e Texto)
   const getColor = (pct) => {
     if (pct === null) return '#666';
-    if (pct < 20) return '#ff4b5c'; // Vermelho
-    if (pct < 40) return '#f6d365'; // Amarelo
-    return '#00d26a'; // Verde
+    if (pct < 20) return '#ff4b5c'; 
+    if (pct < 40) return '#f6d365';
+    return '#00d26a';
   };
 
   return (
@@ -55,15 +55,19 @@ export function VoltageChart({ ros }) {
       display: 'flex',
       flexDirection: 'column',
       justifyContent: 'space-between',
-      height: '100px' // Aumentei um pouco para caber a barra
+      height: '120px' 
     }}>
       
       {/* Título e Porcentagem */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
-        <span style={{ fontSize: '0.7rem', opacity: 0.6, letterSpacing: '1px' }}>ENERGIA</span>
+        <span style={{ fontSize: '0.9rem', opacity: 0.6, letterSpacing: '1px' }}>BATTERY VOLTAGE</span>
         <span style={{ fontSize: '0.9rem', fontWeight: 'bold', color: getColor(percentage) }}>
-          {percentage !== null ? percentage + '%' : '--'}
+          {voltage !== null ? voltage.toFixed(1) : '--.-'}
         </span>
+      </div>
+      
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+        <span style={{ fontSize: '0.9rem', letterSpacing: '1px', fontWeight: 'bold' }}>BATTERY CHARGE</span>
       </div>
 
       {/* Valor da Voltagem (Destaque) */}
@@ -75,21 +79,8 @@ export function VoltageChart({ ros }) {
         textAlign: 'center',
         lineHeight: '1'
       }}>
-        {voltage !== null ? voltage.toFixed(1) : '--.-'}
-        <span style={{ fontSize: '1rem', marginLeft: '5px', opacity: 0.5 }}>V</span>
+        {percentage !== null ? percentage + '%' : '--'}
       </div>
-
-      {/* Barra de Progresso */}
-      <div style={{ width: '100%', height: '6px', background: '#0a0c10', borderRadius: '3px', marginTop: '10px', overflow: 'hidden' }}>
-        <div style={{ 
-          width: `${percentage || 0}%`, 
-          height: '100%', 
-          background: getColor(percentage),
-          transition: 'all 0.5s ease-out',
-          boxShadow: `0 0 10px ${getColor(percentage)}` // Brilho neon na barra
-        }} />
-      </div>
-
     </div>
   );
 }
