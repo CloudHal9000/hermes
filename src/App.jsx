@@ -38,83 +38,81 @@ function App() {
 
   return (
     <div style={{ 
-      position: 'relative', height: '100vh', width: '100vw', 
-      background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' 
+      position: 'relative',
+      height: '100vh', 
+      width: '100vw',
+      background: '#000', 
+      overflow: 'hidden',
+      color: '#eee',
+      fontFamily: 'system-ui, sans-serif'
     }}>
       
-      {/* CAMADA 0: MAPA 3D */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 0 }}>
+      {/* --- CAMADA 0: MAPA 3D (Fundo Total) --- */}
+      <div style={{ 
+        position: 'absolute', 
+        top: 0, 
+        left: 0, 
+        width: '100%', 
+        height: '100%', 
+        zIndex: 0 
+      }}>
         <Map3D ros={ros} />
       </div>
 
-      {/* CAMADA 1: TÍTULO E LOGO FLUTUANTES */}
-      <div style={{ 
-        position: 'absolute', top: '20px', left: '20px', zIndex: 30,
-        display: 'flex', alignItems: 'center', gap: '15px' 
-      }}>
-        <LogoUploader />
-        <h1 style={{ 
-          margin: 0, fontSize: '1.5rem', letterSpacing: '2px', fontWeight: '800', 
-          color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.8)' 
-        }}>
-          FREEBOTICS STUDIO
-        </h1>
-      </div>
-
-      {/* CAMADA 2: PAINEL ESQUERDO (Fleet Manager) */}
-      <aside style={{ 
-        position: 'absolute', top: '80px', left: '20px', width: '300px', zIndex: 10,
-        display: 'flex', flexDirection: 'column', gap: '15px', opacity: 0.9
-      }}>
-        <div style={{
-            background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '15px',
-            display: 'flex', flexDirection: 'column', gap: '15px', 
-            boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
-        }}>
-          {/* Passamos a lista 'robots' direta, que agora tem memória */}
-          <FleetSelector 
-            robots={robots} 
-            activeId={activeRobotId} 
-            onSelect={setActiveRobotId} 
-          />
-        </div>
-      </aside>
-
-      {/* CAMADA 3: PAINEL DIREITO (Status + Telemetria) */}
-      <aside style={{ 
-        position: 'absolute', top: '20px', right: '20px', width: '320px', zIndex: 10,
-        background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', 
-        padding: '20px',
-        display: 'flex', flexDirection: 'column', gap: '15px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)',
-        maxHeight: 'calc(100vh - 40px)', overflowY: 'auto'
-      }}>
+      {/* --- CAMADA 1: HEADER (Flutuante no topo) --- */}
+      <header style={{ 
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '60px',
+        zIndex: 20, 
         
-        {/* Cabeçalho do Painel Direito */}
-        <div style={{ 
-          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-          borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px'
-        }}>
-           <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', opacity: 0.5, letterSpacing: '1px' }}>
-             CONNECTION
-           </span>
-           <div style={{ fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-             <span style={{ color: isConnected ? '#00d26a' : '#ff4b5c' }}>
-               {isConnected ? '● ONLINE' : '● OFFLINE'}
-             </span>
-             <span style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', opacity: 0.8 }}>
-               {activeRobot?.ip}
-             </span>
-           </div>
+        // Estilo Vidro
+        background: 'rgba(31, 40, 51, 0.85)', 
+        backdropFilter: 'blur(8px)',          
+        borderBottom: '1px solid rgba(255,255,255,0.1)',
+        display: 'flex', 
+        alignItems: 'center', 
+        padding: '0 20px',
+        justifyContent: 'space-between',
+        boxSizing: 'border-box'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <LogoUploader />
+          <div>
+            <h1 style={{ margin: 0, fontSize: '1.1rem', letterSpacing: '1px', fontWeight: 'bold', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+              FREEBOTICS STUDIO
+            </h1>
+            <span style={{ fontSize: '0.75rem', opacity: 0.8, background: 'rgba(0,0,0,0.5)', padding: '2px 8px', borderRadius: '4px', fontFamily: 'monospace' }}>
+              {ip}
+            </span>
+          </div>
         </div>
+        <div className={isConnected ? 'online' : 'offline'} style={{ fontSize: '0.8rem', fontWeight: 'bold', textShadow: '0 1px 2px black' }}>
+          {isConnected ? '● CONECTADO' : '● DESCONECTADO'}
+        </div>
+      </aside>
 
+      {/* --- CAMADA 2: SIDEBAR (Flutuante na esquerda) --- */}
+      <aside style={{ 
+        position: 'absolute',
+        top: '80px',
+        left: '10px',
+        bottom: '20px',
+        width: '340px',
+        height: '500px',
+        zIndex: 10,
+      }}>
+        {/* Componentes da Sidebar */}
+        {/* <EStop ros={ros} /> */}
+        {/* <CameraView /> */}
         <Telemetry ros={ros} />
+        {/* <LogConsole ros={ros} /> */}
 
       </aside>
-        <Joystick ros={ros} />
-
+      {/* --- CAMADA 3: JOYSTICK (Já é fixed/flutuante) --- */}
+      <Joystick ros={ros} />
     </div>
   );
 }

@@ -143,15 +143,13 @@ export function Joystick({ ros }) {
 
   return (
     <div style={{ 
-      position: 'absolute',
-      // --- AJUSTE DE POSIÇÃO ---
-      bottom: '150px', // Mais alto que antes (era 30px)
-      right: '110px', // Cálculo exato para centralizar com o painel de 320px
-      
-      zIndex: 1000, 
-      width: '180px', 
-      height: '180px', 
-      background: `radial-gradient(circle, ${glowColor} 0%, rgba(0,0,0,0.6) 70%)`,
+      position: 'fixed',
+      top: '80px',
+      right: '20px',
+      zIndex: 1000,
+      width: '140px', 
+      height: '140px', 
+      background: 'radial-gradient(circle, rgba(20,20,30,0.8) 0%, rgba(0,0,0,0.6) 70%)',
       borderRadius: '50%',
       border: `2px solid ${borderColor}`,
       backdropFilter: 'blur(2px)',

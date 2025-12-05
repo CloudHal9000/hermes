@@ -44,7 +44,7 @@ export function ModeSwitcher({ ros }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', textAlign: 'center', }}>OPERATION MODE</div>
+      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>OPERATION MODE</div>
       <div style={{ display: 'flex', background: '#161822', borderRadius: '8px', padding: '4px', gap: '4px', border: '1px solid #333' }}>
         <ModeButton active={currentMode === 'MANUAL'} config={MODES.MANUAL} onClick={() => setMode(0)} />
         <ModeButton active={currentMode === 'AUTONOMOUS'} config={MODES.AUTONOMOUS} onClick={() => setMode(1)} />
