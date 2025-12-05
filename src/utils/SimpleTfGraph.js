@@ -136,12 +136,12 @@ export class SimpleTfGraph {
   }
 
   static _compose(t1, q1, t2, q2) {
-    const q = SimpleTfGraph._quatMultiply(q2, q1);
-    const t1Rot = SimpleTfGraph._rotateVector(t1, q2);
+    const q = SimpleTfGraph._quatMultiply(q1, q2);
+    const t1Rot = SimpleTfGraph._rotateVector(t2, q1);
     const t = {
-      x: t1Rot.x + t2.x,
-      y: t1Rot.y + t2.y,
-      z: t1Rot.z + t2.z
+      x: t1Rot.x + t1.x,
+      y: t1Rot.y + t1.y,
+      z: t1Rot.z + t1.z
     };
     return { t: t, q: q };
   }

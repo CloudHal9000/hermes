@@ -6,13 +6,13 @@ export function Speedometer({ value }) {
   
   return (
     <div style={{ textAlign: 'center' }}>
-      <div style={{ fontSize: '0.8rem', opacity: 0.7, marginBottom: '-10px' }}>
-        VELOCIDADE (km/h)
+      <div style={{ fontSize: '0.9rem', fontWeight: 'bold', marginBottom: '4px' }}>
+        SPEED (km/h)
       </div>
       
       <GaugeComponent
         value={value}
-        type="radial"
+        type="grafana"
         
         // --- AQUI ESTÁ O SEGREDO DO 0 a 2 km/h ---
         minValue={0}
@@ -21,9 +21,8 @@ export function Speedometer({ value }) {
         // Estilo do Arco
         arc={{
           width: 0.2, // Espessura do arco
-          padding: 0.02,
-          cornerRadius: 1,
-          // Cores: Verde (seguro) até 1.2, Amarelo até 1.8, Vermelho no talo (2.0)
+          padding: 0.01,
+          cornerRadius: 10,
           subArcs: [
             { limit: 1.2, color: '#00d26a', showTick: true },
             { limit: 1.8, color: '#f6d365', showTick: true },
@@ -35,8 +34,8 @@ export function Speedometer({ value }) {
         pointer={{
           color: '#ffffff',
           length: 0.80,
-          width: 15,
-          elastic: true, // Animação suave
+          width: 12,
+          elastic: true,
         }}
         
         // Estilo do Texto Central
@@ -55,7 +54,7 @@ export function Speedometer({ value }) {
                 { value: 2.0 }
             ],
             defaultTickValueConfig: { 
-               formatTextValue: (val) => val % 1 === 0 ? val : val.toFixed(1) // Mostra 1.5 mas esconde .0 no 1
+               formatTextValue: (val) => val % 1 === 0 ? val : val.toFixed(1)
             }
           }
         }}

@@ -4,14 +4,12 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import URDFLoader from 'urdf-loader';
 import * as ROSLIB from 'roslib';
 import PropTypes from 'prop-types';
-import { SimpleTfGraph } from '../utils/SimpleTfGraph'; // <--- IMPORTANTE
+import { SimpleTfGraph } from '../utils/SimpleTfGraph';
 
 export function Map3D({ ros }) {
   const mountRef = useRef(null);
   const mapMeshRef = useRef(null);
   const robotRef = useRef(null);
-  
-  // Guardar referência do TF Graph para usar nos callbacks
   const tfGraphRef = useRef(null);
 
   useEffect(() => {
@@ -23,7 +21,6 @@ export function Map3D({ ros }) {
     if (width === 0 || height === 0) return;
 
     // --- 1. SETUP DO TF ---
-    // Instancia a classe que criamos para gerenciar as transformações
     const tfGraph = new SimpleTfGraph(ros);
     tfGraphRef.current = tfGraph;
 
@@ -56,22 +53,25 @@ export function Map3D({ ros }) {
     grid.rotation.x = Math.PI / 2;
     scene.add(grid);
 
-    // Grupo do Robô
+    // GRUPO MUNDO (Odometria move este grupo)
     const robotGroup = new THREE.Group();
     scene.add(robotGroup);
 
-    // --- 3. CARREGAR URDF ---
+    // --- 3. CARREGAR URDF (VISUAL DO ROBÔ) ---
     const loader = new URDFLoader();
     loader.packages = { 'freebotics_description': './freebotics_description' };
 
     loader.load('./urdf/robot.urdf', (robot) => {
-        // Ajuste de altura para as rodas tocarem o grid
+        // Ajuste de Altura (Rodas no chão)
         robot.position.z = 0.23; 
         
-        // Se precisar rotacionar:
-        robot.rotation.x = - Math.PI;
-        robot.rotation.y = Math.PI ;
-        robot.rotation.z = Math.PI;
+        // --- CORREÇÃO DE ROTAÇÃO (AQUI!) ---
+        // 1. Mantém em pé (eixo X)
+        //robot.rotation.x = -Math.PI / 2; 
+        
+        // 2. Gira 180 graus (eixo Z) para olhar para frente
+        // Isso gira apenas a malha, não os sensores (que são irmãos, não filhos)
+        // robot.rotation.z = Math.PI;
 
         robot.traverse(c => {
             c.castShadow = true;
@@ -79,23 +79,20 @@ export function Map3D({ ros }) {
         });
 
         robotRef.current = robot;
-        robotGroup.add(robot);
+        robotGroup.add(robot); // Adiciona ao grupo, ao lado dos sensores
     });
 
-    // --- 4. FUNÇÃO INTELIGENTE DE LIDAR (USANDO TF) ---
-    // Agora não pede offset manual, pede o TF Graph
+    // --- 4. LIDARES (USANDO TF) ---
+    
+    // Função que usa o SimpleTfGraph para calcular a posição exata
     const updateLidarWithTF = (msg, geometry) => {
         const tf = tfGraphRef.current;
         if (!tf) return;
 
-        // Pergunta: Onde está o sensor (msg.header.frame_id) em relação ao robô (base_link)?
-        // Nota: Use 'base_link' ou 'base_footprint' dependendo do seu URDF
-        const transform = tf.lookupTransform(msg.header.frame_id, 'base_footprint');
+        // Pede ao TF: "Onde está o sensor no frame do robô?"
+        const transform = tf.lookupTransform('base_link', msg.header.frame_id);
         
-        if (!transform) {
-            // Se ainda não recebeu o TF, não desenha nada para evitar pontos errados
-            return; 
-        }
+        if (!transform) return;
 
         const positions = [];
         let angle = msg.angle_min;
@@ -103,22 +100,20 @@ export function Map3D({ ros }) {
         for (let i = 0; i < msg.ranges.length; i++) {
             const r = msg.ranges[i];
             if (r > msg.range_min && r < msg.range_max && r < 20) {
-                // 1. Coordenada Polar -> Cartesiano Local
+                // 1. Polar -> Cartesiano Local
                 const lx = r * Math.cos(angle);
                 const ly = r * Math.sin(angle);
                 const lz = 0.0;
 
-                // 2. Aplica a Rotação do TF (Quaternion)
-                // Usamos a função estática da nossa classe utilitária
+                // 2. Rotação do TF
                 const v = { x: lx, y: ly, z: lz };
                 const vRot = SimpleTfGraph._rotateVector(v, transform.q);
 
-                // 3. Aplica a Translação do TF
+                // 3. Translação do TF
                 const finalX = vRot.x + transform.t.x;
                 const finalY = vRot.y + transform.t.y;
                 const finalZ = vRot.z + transform.t.z;
 
-                // Z visual (levanta um pouco pra ver melhor, opcional)
                 positions.push(finalX, finalY, finalZ + 0.1); 
             }
             angle += msg.angle_increment;
@@ -127,19 +122,19 @@ export function Map3D({ ros }) {
         geometry.computeBoundingSphere();
     };
 
+    // Geometrias dos Sensores
     const frontGeo = new THREE.BufferGeometry();
-    const frontMat = new THREE.PointsMaterial({ size: 0.05, color: 0xff0000 });
+    const frontMat = new THREE.PointsMaterial({ size: 0.03, color: 0xff0000 });
     const frontPoints = new THREE.Points(frontGeo, frontMat);
     robotGroup.add(frontPoints);
 
     const rearGeo = new THREE.BufferGeometry();
-    const rearMat = new THREE.PointsMaterial({ size: 0.05, color: 0x00ffff });
+    const rearMat = new THREE.PointsMaterial({ size: 0.03, color: 0x00ffff });
     const rearPoints = new THREE.Points(rearGeo, rearMat);
     robotGroup.add(rearPoints);
 
     // --- LISTENERS ---
     
-    // Odom
     const odomListener = new ROSLIB.Topic({
         ros: ros,
         name: '/hoverboard_base_controller/odom',
@@ -154,7 +149,6 @@ export function Map3D({ ros }) {
         robotGroup.rotation.z = Math.atan2(siny, cosy);
     });
 
-    // Lidars (Sem Offset Manual!)
     const frontLidarListener = new ROSLIB.Topic({
         ros: ros,
         name: '/lidar/front',
@@ -169,7 +163,6 @@ export function Map3D({ ros }) {
     });
     rearLidarListener.subscribe((msg) => updateLidarWithTF(msg, rearGeo));
 
-    // Mapa
     const mapListener = new ROSLIB.Topic({
         ros: ros,
         name: '/map',
@@ -209,7 +202,7 @@ export function Map3D({ ros }) {
         scene.add(mapMesh);
     });
 
-    // --- LOOP ---
+    // --- LOOP E RESIZE ---
     const handleResize = () => {
         if (!mount) return;
         renderer.setSize(mount.clientWidth, mount.clientHeight);
@@ -234,8 +227,7 @@ export function Map3D({ ros }) {
         rearLidarListener.unsubscribe();
         mapListener.unsubscribe();
         
-        // Destruir o TF Graph para parar de ouvir os tópicos
-        if (tfGraphRef.current) tfGraphRef.current.destroy();
+        if (tfGraphRef.current) tfGraphRef.current.destroy(); // Limpa o TF
 
         if (mount && renderer.domElement) mount.removeChild(renderer.domElement);
         renderer.dispose();

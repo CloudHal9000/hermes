@@ -32,19 +32,23 @@ export function ModeSwitcher({ ros }) {
     });
 
     // --- CORREÇÃO AQUI ---
-    // Não use 'new ROSLIB.ServiceRequest'. Use JSON direto.
+    // Usamos um objeto simples em vez de 'new ROSLIB.ServiceRequest'
     const request = { mode: modeId };
 
-    service.callService(request, (res) => {
-      console.log('Modo alterado:', res);
-    }, (err) => {
-      console.error('Erro ao trocar modo:', err);
+    console.log(`Enviando comando de serviço: ${modeId}`);
+
+    service.callService(request, (result) => {
+      console.log('Sucesso:', result);
+    }, (error) => {
+      console.error('Erro no serviço:', error);
     });
   };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-      <div style={{ fontSize: '0.7rem', opacity: 0.7 }}>MODO DE OPERAÇÃO</div>
+      <div style={{ fontSize: '0.9rem', textAlign: 'center', fontWeight: 'bold',  marginBottom: '2px' }}>
+        OPERATION MODE
+      </div>
       <div style={{ display: 'flex', background: '#161822', borderRadius: '8px', padding: '4px', gap: '4px', border: '1px solid #333' }}>
         <ModeButton active={currentMode === 'MANUAL'} config={MODES.MANUAL} onClick={() => setMode(0)} />
         <ModeButton active={currentMode === 'AUTONOMOUS'} config={MODES.AUTONOMOUS} onClick={() => setMode(1)} />
@@ -56,13 +60,16 @@ export function ModeSwitcher({ ros }) {
 
 function ModeButton({ active, config, onClick }) {
   return (
-    <button onClick={onClick} style={{
+    <button 
+      onClick={onClick}
+      style={{
         flex: 1, border: 'none', borderRadius: '6px', padding: '8px 0', cursor: 'pointer',
         fontWeight: 'bold', fontSize: '0.8rem',
         color: active ? '#111' : '#888',
         background: active ? config.color : 'transparent',
-        transition: 'all 0.2s'
-    }}>
+        transition: 'all 0.2s ease'
+      }}
+    >
       {config.label}
     </button>
   );

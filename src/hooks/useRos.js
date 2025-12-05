@@ -1,26 +1,27 @@
 import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
 
-// Configuração inicial
-const ROBOT_IP = "192.168.0.39"; 
-const WEBSOCKET_URL = `ws://${ROBOT_IP}:9090`;
-
-export function useRos() {
+// Removemos a constante fixa daqui. O IP virá de fora.
+export function useRos(robotIp) { // <--- Agora recebe o IP
   const [isConnected, setIsConnected] = useState(false);
   const [ros, setRos] = useState(null);
 
   useEffect(() => {
-    const rosConnection = new ROSLIB.Ros({
-      url: WEBSOCKET_URL
-    });
+    // Se não tiver IP selecionado, não conecta
+    if (!robotIp) return;
+
+    const url = `ws://${robotIp}:9090`;
+    console.log(`Tentando conectar em: ${url}`);
+
+    const rosConnection = new ROSLIB.Ros({ url });
 
     rosConnection.on('connection', () => {
-      console.log('Conectado ao robô!');
+      console.log(`Conectado ao robô ${robotIp}!`);
       setIsConnected(true);
     });
 
     rosConnection.on('error', () => {
-      console.log('Tentando conectar...'); 
+      // console.log('Tentando reconectar...'); // Opcional
       setIsConnected(false);
     });
 
@@ -30,10 +31,11 @@ export function useRos() {
 
     setRos(rosConnection);
 
+    // Limpeza: Ao trocar de robô, desconecta o anterior
     return () => {
       rosConnection.close();
     };
-  }, []);
+  }, [robotIp]); // <--- O array de dependência garante a reconexão ao mudar o IP
 
-  return { ros, isConnected, ip: ROBOT_IP };
+  return { ros, isConnected };
 }
