@@ -12,7 +12,7 @@ import { FleetSelector } from './components/FleetSelector';
 function App() {
   // 1. Estado da Frota (Agora com memória de 'online')
   const [robots, setRobots] = useState([
-    { id: 1, name: 'Mutley', ip: '192.168.0.39', online: false },
+    { id: 1, name: 'Mutley', ip: '192.168.0.74', online: false },
     { id: 2, name: 'Darth',  ip: '192.168.0.40', online: false },
     { id: 3, name: 'Sim',    ip: 'localhost',    online: false }
   ]);
