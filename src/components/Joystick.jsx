@@ -139,7 +139,7 @@ export function Joystick({ ros }) {
 
     const sendVelocity = (lx, az) => {
       cmdVel.publish({
-        header: { frame_id: "base_link", stamp: { sec: 0, nanosec: 0 } },
+        header: { frame_id: "base_footprint", stamp: { sec: 0, nanosec: 0 } },
         twist: { linear: { x: lx, y: 0, z: 0 }, angular: { x: 0, y: 0, z: az } }
       });
     };
