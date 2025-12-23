@@ -1,41 +1,49 @@
 import { useState, useEffect } from 'react';
 import * as ROSLIB from 'roslib';
 
-// Removemos a constante fixa daqui. O IP virá de fora.
-export function useRos(robotIp) { // <--- Agora recebe o IP
-  const [isConnected, setIsConnected] = useState(false);
+export function useRos(robotIp) {
   const [ros, setRos] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
 
   useEffect(() => {
-    // Se não tiver IP selecionado, não conecta
-    if (!robotIp) return;
+    if (!robotIp) {
+      if (ros) {
+        ros.close();
+        setRos(null);
+        setIsConnected(false);
+      }
+      return;
+    }
 
     const url = `ws://${robotIp}:9090`;
-    console.log(`Tentando conectar em: ${url}`);
+    console.log(`Attempting to connect to: ${url}`);
 
     const rosConnection = new ROSLIB.Ros({ url });
 
     rosConnection.on('connection', () => {
-      console.log(`Conectado ao robô ${robotIp}!`);
+      console.log(`Connected to robot at ${robotIp}!`);
       setIsConnected(true);
     });
 
-    rosConnection.on('error', () => {
-      // console.log('Tentando reconectar...'); // Opcional
+    rosConnection.on('error', (error) => {
+      console.error(`Error connecting to ${robotIp}:`, error);
       setIsConnected(false);
     });
 
     rosConnection.on('close', () => {
+      console.log(`Connection to ${robotIp} closed.`);
       setIsConnected(false);
     });
 
     setRos(rosConnection);
 
-    // Limpeza: Ao trocar de robô, desconecta o anterior
+    // Cleanup function: this will be called when the component unmounts
+    // or when robotIp changes, disconnecting from the previous robot.
     return () => {
+      console.log(`Closing connection to ${robotIp}`);
       rosConnection.close();
     };
-  }, [robotIp]); // <--- O array de dependência garante a reconexão ao mudar o IP
+  }, [robotIp]); // Dependency array ensures this effect runs only when robotIp changes
 
   return { ros, isConnected };
 }

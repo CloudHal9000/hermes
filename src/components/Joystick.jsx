@@ -20,7 +20,7 @@ export function Joystick({ ros }) {
 
   const MAX_LIN = 0.6; 
   const MAX_ANG = 1.0; 
-  const TOPIC_NAME = '/hoverboard_base_controller/cmd_vel_raw';
+  const TOPIC_NAME = '/hoverboard_base_controller/cmd_vel';
 
   // --- 1. LÓGICA DE TECLADO ---
   useEffect(() => {

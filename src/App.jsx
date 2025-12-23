@@ -1,16 +1,19 @@
 import { useState, useEffect } from 'react';
 import { useRos } from './hooks/useRos';
+import { useExternalScript } from './hooks/useExternalScript'; // 1. Mantenha esta importação
 import { Joystick } from './components/Joystick';
 import { Telemetry } from './components/Telemetry';
 import { NavigationControl } from './components/NavigationControl';
 import { Map3D } from './components/Map3D';
 import { LogoUploader } from './components/LogoUploader';
 import { FleetSelector } from './components/FleetSelector';
-import * as ROSLIB from 'roslib'; // Import necessário para o Cancel
 
 function App() {
+  const isEventEmitterReady = useExternalScript("https://cdn.jsdelivr.net/npm/eventemitter2@6.4.9/lib/eventemitter2.min.js" );
+  const isRoslibReady = useExternalScript(isEventEmitterReady ? "https://cdn.jsdelivr.net/npm/roslib/build/roslib.min.js" : null );
+
   const [robots, setRobots] = useState([
-    { id: 1, name: 'Mutley', ip: '192.168.1.56', online: false }, // Ajuste seus IPs
+    { id: 1, name: 'Mutley', ip: '192.168.1.142', online: false },
     { id: 2, name: 'Darth',  ip: '192.168.0.40', online: false },
     { id: 3, name: 'Sim',    ip: 'localhost',    online: false }
   ]);
@@ -18,47 +21,80 @@ function App() {
   const [activeRobotId, setActiveRobotId] = useState(1);
   const [showFootprint, setShowFootprint] = useState(true);
   const [viewMode, setViewMode] = useState('FREE');
-  
-  // --- NOVO: Estado para controlar a ferramenta do mouse (GOAL ou POSE) ---
   const [activeTool, setActiveTool] = useState(null);
 
+  useEffect(() => {
+    const fetchRobotsFromAPI = async () => {
+      try {
+        const response = await fetch('http://0.0.0.0:8000/api/robots' );
+        
+        if (!response.ok) {
+          console.warn(`⚠️ API retornou status ${response.status}. Mantendo lista anterior de robôs.`);
+          return;
+        }
+
+        const data = await response.json();
+        
+        // Mapeia os dados da API para o formato esperado pelo dashboard
+        if (data.robots && Array.isArray(data.robots)) {
+          const mappedRobots = data.robots.map((robot, index) => ({
+            id: index + 1, // Usa um ID numérico para compatibilidade com o seletor
+            name: robot.id.charAt(0).toUpperCase() + robot.id.slice(1), // Capitaliza o nome
+            ip: robot.ip,
+            online: robot.status === 'online',
+            battery_level: robot.battery_level,
+            mode: robot.mode
+          }));
+
+          console.log('✅ Robôs carregados da API:', mappedRobots);
+          setRobots(mappedRobots);
+        }
+      } catch (error) {
+        console.error('❌ Erro ao buscar robôs da API:', error);
+        // Se houver erro, mantém a lista anterior
+      }
+    };
+
+    // Busca os robôs imediatamente quando o componente monta
+    fetchRobotsFromAPI();
+
+    // Configura a atualização periódica a cada 5 segundos
+    const interval = setInterval(fetchRobotsFromAPI, 5000);
+
+    // Limpa o intervalo quando o componente é desmontado
+    return () => clearInterval(interval);
+  }, []);
+
   const activeRobot = robots.find(r => r.id === activeRobotId);
-  const { isConnected, ros } = useRos(activeRobot?.ip);
+  const { isConnected, ros } = useRos(isRoslibReady ? activeRobot?.ip : null);
 
   useEffect(() => {
     setRobots(prev => prev.map(r => r.id === activeRobotId ? { ...r, online: isConnected } : r));
   }, [isConnected, activeRobotId]);
 
-  // Função para Cancelar Navegação (Stop)
   const handleStopNav2 = () => {
-    if (!ros) return;
+    // 4. ALTERAÇÃO: Verifica se o window.ROSLIB existe antes de usar
+    if (!ros || !isRoslibReady || !window.ROSLIB) return;
     console.log("🛑 STOP NAV2");
-    // Publica velocidade zero para garantir parada imediata
-    const cmdVel = new ROSLIB.Topic({ ros, name: '/cmd_vel', messageType: 'geometry_msgs/Twist' });
-    const stopMsg = new ROSLIB.Message({ linear: { x: 0,y:0,z:0 }, angular: { x: 0,y:0,z:0 } });
-    
-    // Tenta cancelar ação do Nav2 (dependendo da sua stack, pode precisar de ActionClient)
-    // Por enquanto, enviamos STOP manual várias vezes
+    const cmdVel = new window.ROSLIB.Topic({ ros, name: '/cmd_vel', messageType: 'geometry_msgs/Twist' });
+    const stopMsg = new window.ROSLIB.Message({ linear: { x: 0,y:0,z:0 }, angular: { x: 0,y:0,z:0 } });
     for(let i=0; i<5; i++) cmdVel.publish(stopMsg);
-    
-    setActiveTool(null); // Desativa ferramentas
+    setActiveTool(null);
   };
 
   return (
     <div style={{ position: 'relative', height: '100vh', width: '100vw', background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' }}>
       
-      {/* CAMADA 0: MAPA 3D (Recebe activeTool e setActiveTool) */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <Map3D 
           ros={ros} 
           showFootprint={showFootprint} 
           viewMode={viewMode}
-          activeTool={activeTool}       // <--- Passando estado
-          setActiveTool={setActiveTool} // <--- Passando função
+          activeTool={activeTool}
+          setActiveTool={setActiveTool}
         />
       </div>
 
-      {/* HEADER */}
       <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '80px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', pointerEvents: 'auto' }}>
           <LogoUploader />
@@ -68,15 +104,12 @@ function App() {
         </div>
       </div>
 
-      {/* PAINEL ESQUERDO */}
       <aside style={{ position: 'absolute', top: '100px', left: '20px', width: '280px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'none' }}>
         
-        {/* 1. SELETOR DE FROTA */}
         <div style={{ pointerEvents: 'auto', background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
           <FleetSelector robots={robots} activeId={activeRobotId} onSelect={setActiveRobotId} />
         </div>
 
-        {/* 2. NAV2 CONTROL (RESTAURADO) */}
         <div style={{ pointerEvents: 'auto', background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#ccc', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px' }}>
                 NAV2 CONTROL
@@ -116,10 +149,10 @@ function App() {
             </button>
         </div>
 
-        {/* 3. NAVIGATION CONTROL (Inputs Manuais) */}
         <div style={{ pointerEvents: 'auto' }}>
           <NavigationControl 
-            ros={ros} 
+            ros={ros}
+            isRoslibReady={isRoslibReady}
             showFootprint={showFootprint} 
             setShowFootprint={setShowFootprint} 
             viewMode={viewMode} 
@@ -128,7 +161,6 @@ function App() {
         </div>
       </aside>
 
-      {/* PAINEL DIREITO */}
       <aside style={{ position: 'absolute', top: '20px', right: '20px', width: '320px', zIndex: 10, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'auto', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
            <span style={{ fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase' }}>CONNECTION</span>

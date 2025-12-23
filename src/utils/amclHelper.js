@@ -1,21 +1,23 @@
+// A sintaxe que funciona no seu App.js e, portanto, deve funcionar aqui.
 import * as ROSLIB from 'roslib';
 
+/**
+ * Classe auxiliar para interagir com o AMCL e a pilha de navegação do ROS2.
+ */
 export class AMCLHelper {
   constructor(ros) {
+    if (!ros) {
+      throw new Error("AMCLHelper requer uma instância de 'ros'.");
+    }
     this.ros = ros;
   }
 
   setInitialPose(x, y, yawDeg) {
-    if (!this.ros) {
-      console.error('🚫 ROS não definido no AMCLHelper.');
+    if (!this.ros.isConnected) {
+      console.error('🚫 ROS desconectado.');
       return false;
     }
-    
-    if (!this.ros.isConnected) {
-      console.warn('⚠️ ROS desconectado. Tentando enviar mesmo assim...');
-    }
 
-    // 1. CONVERSÃO FORÇADA PARA NÚMERO (Resolve problema de inputs string)
     const posX = parseFloat(x);
     const posY = parseFloat(y);
     const yaw = parseFloat(yawDeg);
@@ -25,31 +27,21 @@ export class AMCLHelper {
       return false;
     }
 
-    // 2. MATEMÁTICA
     const yawRad = yaw * (Math.PI / 180);
     const qz = Math.sin(yawRad / 2);
     const qw = Math.cos(yawRad / 2);
 
-    // 3. TÓPICO (Verifique se seu robô usa namespace!)
-    // Padrão ROS 2: /initialpose
-    // Se tiver namespace: /nome_robo/initialpose
-    const topicName = '/initialpose'; 
-
+    // Usamos as classes diretamente do objeto ROSLIB importado.
     const topic = new ROSLIB.Topic({
       ros: this.ros,
-      name: topicName,
-      messageType: 'geometry_msgs/PoseWithCovarianceStamped'
+      name: '/initialpose',
+      messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped'
     });
-
-    // 4. TIMESTAMP (ROS 2 precisa de tempo atual)
-    const now = new Date();
-    const secs = Math.floor(now.getTime() / 1000);
-    const nsecs = Math.floor((now.getTime() % 1000) * 1000000);
 
     const msg = new ROSLIB.Message({
       header: {
         frame_id: 'map',
-        stamp: { sec: secs, nanosec: nsecs }
+        stamp: { sec: 0, nanosec: 0 }
       },
       pose: {
         pose: {
@@ -60,26 +52,36 @@ export class AMCLHelper {
       }
     });
 
-    console.log(`🚀 ENVIANDO POSE MANUAL para ${topicName}:`, { 
-      x: posX, y: posY, yaw: yaw, 
-      rosConnected: this.ros.isConnected 
-    });
-
+    console.log('🚀 Enviando POSE INICIAL para /initialpose:', msg);
     topic.publish(msg);
     return true;
   }
 
-  reinitializeGlobalLocalization() {
-    if (!this.ros) return;
-    const service = new ROSLIB.Service({
-      ros: this.ros,
-      name: '/reinitialize_global_localization',
-      serviceType: 'std_srvs/srv/Empty'
+  // ... (funções completas)
+  setGoal(x, y, yawDeg) {
+    if (!this.ros.isConnected) { return false; }
+    const posX = parseFloat(x);
+    const posY = parseFloat(y);
+    const yaw = parseFloat(yawDeg);
+    if (isNaN(posX) || isNaN(posY) || isNaN(yaw)) { return false; }
+    const yawRad = yaw * (Math.PI / 180);
+    const qz = Math.sin(yawRad / 2);
+    const qw = Math.cos(yawRad / 2);
+    const topic = new ROSLIB.Topic({ ros: this.ros, name: '/goal_pose', messageType: 'geometry_msgs/msg/PoseStamped' });
+    const msg = new ROSLIB.Message({
+      header: { frame_id: 'map', stamp: { sec: 0, nanosec: 0 } },
+      pose: { position: { x: posX, y: posY, z: 0.0 }, orientation: { x: 0.0, y: 0.0, z: qz, w: qw } }
     });
-    console.log('🔄 Chamando Global Localization...');
-    service.callService(new ROSLIB.ServiceRequest({}), 
-      () => console.log('✅ Global Localization OK'),
-      (err) => console.error('❌ Erro Global Localization', err)
-    );
+    console.log('🚀 Enviando GOAL para /goal_pose:', msg);
+    topic.publish(msg);
+    return true;
+  }
+  
+  reinitializeGlobalLocalization() {
+    if (!this.ros.isConnected) { return; }
+    const service = new ROSLIB.Service({ ros: this.ros, name: '/reinitialize_global_localization', serviceType: 'std_srvs/srv/Empty' });
+    const request = new ROSLIB.ServiceRequest({});
+    console.log('🔄 Chamando serviço de Global Localization...');
+    service.callService(request, (result) => console.log('✅ Resposta do serviço OK.', result), (err) => console.error('❌ Erro no serviço:', err));
   }
 }
