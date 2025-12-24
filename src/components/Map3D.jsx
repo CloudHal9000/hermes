@@ -187,8 +187,10 @@ export function Map3D({ ros, showFootprint, viewMode, activeTool, setActiveTool 
     const cmGeo = new THREE.PlaneGeometry(1, 1); 
     const localCmMesh = new THREE.Mesh(cmGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.8, side: THREE.DoubleSide, depthWrite: false }));
     localCmMesh.visible = false; scene.add(localCmMesh); localCostmapRef.current = localCmMesh;
+      if (localCostmapRef.current) localCostmapRef.current.visible = true;
     const globalCmMesh = new THREE.Mesh(cmGeo, new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.6, side: THREE.DoubleSide, depthWrite: false }));
     globalCmMesh.visible = false; scene.add(globalCmMesh); globalCostmapRef.current = globalCmMesh;
+      if (globalCostmapRef.current) globalCostmapRef.current.visible = true;
 
     const localCmSub = new ROSLIB.Topic({ ros, name: '/local_costmap/costmap', messageType: 'nav_msgs/OccupancyGrid', compression: 'cbor' });
     localCmSub.subscribe((msg) => { if(localCostmapRef.current && localCostmapRef.current.visible) updateCostmapMesh(msg, localCostmapRef, 'LOCAL'); });
@@ -321,11 +323,7 @@ export function Map3D({ ros, showFootprint, viewMode, activeTool, setActiveTool 
   useEffect(() => { 
     if (footprintRef.current) {
       footprintRef.current.visible = showFootprint;
-    }
-  }, [showFootprint]);
-  useEffect(() => { 
-      if (localCostmapRef.current) localCostmapRef.current.visible = showFootprint; 
-      if (globalCostmapRef.current) globalCostmapRef.current.visible = showFootprint; 
+      }
   }, [showFootprint]);
 
   const handlePointerDown = (event) => {
