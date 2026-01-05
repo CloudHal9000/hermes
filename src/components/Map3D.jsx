@@ -145,7 +145,7 @@ export function Map3D({ ros, showFootprint, viewMode, activeTool, setActiveTool 
         opacity: 0.9
     });
     const fpLine = new THREE.LineLoop(fpGeo, fpMat);
-    fpLine.position.z = 0.01;
+    fpLine.position.z = 0.08;
     fpLine.visible = showFootprint;
     robotGroup.add(fpLine); // Adicionado como filho do robotGroup
     footprintRef.current = fpLine;

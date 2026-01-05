@@ -3,18 +3,17 @@ import * as ROSLIB from 'roslib';
 import PropTypes from 'prop-types';
 import { useNotification } from '../context/NotificationContext';
 
-export function DashboardPanel({ ros, robotName }) {
+export function DashboardPanel({ ros, robotName, robotIp }) {
   const [velocityKmh, setVelocityKmh] = useState(0.0);
   const [currentMode, setCurrentMode] = useState('UNKNOWN');
   const [batteryPercentage, setBatteryPercentage] = useState(null);
   const { addNotification } = useNotification();
 
-  // Refs para gerenciar subscriptions
+  // Refs para armazenar os listeners e limpar depois
   const odomListenerRef = useRef(null);
   const batListenerRef = useRef(null);
   const modeListenerRef = useRef(null);
   const lastModeRef = useRef(null);
-  const subscriptionsInitializedRef = useRef(false);
 
   const MODES = {
     MANUAL: { id: 0, label: 'MANUAL', color: '#00d26a' },
@@ -24,11 +23,9 @@ export function DashboardPanel({ ros, robotName }) {
 
   // --- SUBSCREVER À VELOCIDADE ---
   useEffect(() => {
-    if (!ros || subscriptionsInitializedRef.current) return;
+    if (!ros) return;
 
-    if (odomListenerRef.current) {
-      odomListenerRef.current.unsubscribe();
-    }
+    if (odomListenerRef.current) odomListenerRef.current.unsubscribe();
 
     const odomListener = new ROSLIB.Topic({
       ros: ros,
@@ -42,15 +39,17 @@ export function DashboardPanel({ ros, robotName }) {
     });
     
     odomListenerRef.current = odomListener;
+
+    return () => {
+      if (odomListenerRef.current) odomListenerRef.current.unsubscribe();
+    };
   }, [ros]);
 
   // --- SUBSCREVER À BATERIA ---
   useEffect(() => {
-    if (!ros || subscriptionsInitializedRef.current) return;
+    if (!ros) return;
 
-    if (batListenerRef.current) {
-      batListenerRef.current.unsubscribe();
-    }
+    if (batListenerRef.current) batListenerRef.current.unsubscribe();
 
     const batListener = new ROSLIB.Topic({
       ros: ros,
@@ -63,15 +62,17 @@ export function DashboardPanel({ ros, robotName }) {
     });
     
     batListenerRef.current = batListener;
+
+    return () => {
+      if (batListenerRef.current) batListenerRef.current.unsubscribe();
+    };
   }, [ros]);
 
   // --- SUBSCREVER AO MODO ---
   useEffect(() => {
     if (!ros) return;
 
-    if (modeListenerRef.current) {
-      modeListenerRef.current.unsubscribe();
-    }
+    if (modeListenerRef.current) modeListenerRef.current.unsubscribe();
 
     const modeListener = new ROSLIB.Topic({
       ros: ros,
@@ -82,7 +83,6 @@ export function DashboardPanel({ ros, robotName }) {
     modeListener.subscribe((msg) => {
       const newMode = msg.data.toUpperCase();
       
-      // Mostra notificação apenas se o modo realmente mudou
       if (lastModeRef.current !== newMode) {
         addNotification(`🔄 Modo alterado para ${newMode}`);
         lastModeRef.current = newMode;
@@ -93,18 +93,12 @@ export function DashboardPanel({ ros, robotName }) {
     
     modeListenerRef.current = modeListener;
 
-    // Marcar que subscrições foram inicializadas
-    subscriptionsInitializedRef.current = true;
-
-    // Cleanup
     return () => {
-      if (odomListenerRef.current) odomListenerRef.current.unsubscribe();
-      if (batListenerRef.current) batListenerRef.current.unsubscribe();
       if (modeListenerRef.current) modeListenerRef.current.unsubscribe();
     };
   }, [ros, addNotification]);
 
-  // --- FUNÇÃO PARA MUDAR MODO (CICLA) ---
+  // --- FUNÇÕES DE CONTROLE ---
   const cycleMode = () => {
     let nextModeId = 0;
     if (currentMode === 'MANUAL') nextModeId = 1;
@@ -124,14 +118,12 @@ export function DashboardPanel({ ros, robotName }) {
     );
   };
 
-  // --- FUNÇÃO PARA OBTER COR DA VELOCIDADE ---
   const getSpeedColor = (speed) => {
     if (speed < 0.5) return '#00d26a';
     if (speed < 1.0) return '#f6d365';
     return '#ff4b5c';
   };
 
-  // --- FUNÇÃO PARA OBTER COR DA BATERIA ---
   const getBatteryColor = (pct) => {
     if (pct === null) return '#666';
     if (pct < 20) return '#ff4b5c';
@@ -139,12 +131,28 @@ export function DashboardPanel({ ros, robotName }) {
     return '#00d26a';
   };
 
-  // --- FUNÇÃO PARA OBTER COR DO MODO ---
   const getModeColor = () => {
     if (currentMode === 'MANUAL') return MODES.MANUAL.color;
     if (currentMode === 'AUTONOMOUS') return MODES.AUTONOMOUS.color;
     if (currentMode === 'MAPPING') return MODES.MAPPING.color;
     return '#666';
+  };
+
+  // --- ESTILOS ---
+  const labelStyle = {
+    fontSize: '0.65rem',
+    color: '#ffffffff',
+    letterSpacing: '1px',
+    textTransform: 'uppercase',
+    marginBottom: '2px',
+    textAlign: 'center'
+  };
+
+  const valueStyle = {
+    fontFamily: 'monospace',
+    fontWeight: 'bold',
+    textAlign: 'center',
+    lineHeight: '1'
   };
 
   return (
@@ -153,47 +161,85 @@ export function DashboardPanel({ ros, robotName }) {
       backdropFilter: 'blur(12px)',
       border: '1px solid rgba(255,255,255,0.08)',
       borderRadius: '12px',
-      padding: '5px',
+      padding: '12px',
       display: 'flex',
       flexDirection: 'column',
-      gap: '10px'
+      gap: '12px',
+      width: '100%',             // Ocupa 100% do pai
+      boxSizing: 'border-box',   // Padding fica DENTRO dos 100%
+      overflow: 'hidden'         // Garante que nada vaze
     }}>
 
-      {/* --- NOME DO ROBÔ --- */}
-      <div style={{ 
-        fontSize: '1.1rem', 
-        fontWeight: 'bold', 
-        textAlign: 'center',
-        color: '#00d26a',
-        letterSpacing: '1px'
+      {/* --- CAIXINHA UNIFICADA --- */}
+      <div style={{
+        display: 'flex',
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        background: 'rgba(255,255,255,0.03)',
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: '8px',
+        padding: '8px 8px', // Reduzi levemente o padding lateral
+        width: '100%',
+        boxSizing: 'border-box'
       }}>
-        {robotName || 'ROBÔ'}
+
+        {/* COLUNA 1: NOME + IP */}
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minWidth: '60px' }}>
+          <span style={{ 
+            color: '#00d26a',
+            fontWeight: 'bold', 
+            fontSize: '0.95rem', // Ajuste fino para não estourar nomes longos
+            letterSpacing: '0.5px',
+            lineHeight: '1.2',
+            whiteSpace: 'nowrap'
+          }}>
+            {robotName || 'BOT'}
+          </span>
+          <span style={{ 
+            fontSize: '0.7rem', 
+            color: 'rgba(255, 255, 255, 1)', 
+            fontFamily: 'monospace',
+            marginTop: '2px'
+          }}>
+            {robotIp || '0.0.0.0'}
+          </span>
+        </div>
+
+        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 6px' }}></div>
+
+        {/* COLUNA 2: VELOCIDADE */}
+        <div style={{ display: 'flex', flexDirection: 'column', color: '#ffffff', alignItems: 'center' }}>
+          <span style={labelStyle}>Speed</span>
+          <span style={{ 
+            ...valueStyle, 
+            color: getSpeedColor(velocityKmh), 
+            fontSize: '1rem' 
+          }}>
+            {velocityKmh.toFixed(1)} <span style={{fontSize: '0.7em', opacity: 0.7}}>km/h</span>
+          </span>
+        </div>
+
+        <div style={{ width: '1px', height: '24px', background: 'rgba(255,255,255,0.1)', margin: '0 6px' }}></div>
+
+        {/* COLUNA 3: BATERIA */}
+        <div style={{ display: 'flex', flexDirection: 'column', color: '#ffffff', alignItems: 'center' }}>
+          <span style={labelStyle}>Battery</span>
+          <span style={{ 
+            ...valueStyle, 
+            color: getBatteryColor(batteryPercentage), 
+            fontSize: '1rem' 
+          }}>
+            {batteryPercentage !== null ? batteryPercentage : '--'}
+            <span style={{fontSize: '0.7em', opacity: 0.7}}>%</span>
+          </span>
+        </div>
+
       </div>
 
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 0, marginBottom: '10px' }} />
-
-      {/* --- VELOCIDADE --- */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <div style={{ fontSize: '0.75rem', opacity: 0.6, letterSpacing: '1px', textTransform: 'uppercase' }}>
-          Speed (km/h)
-        </div>
-        <div style={{
-          fontSize: '1.5rem',
-          fontWeight: 'bold',
-          color: getSpeedColor(velocityKmh),
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          transition: 'color 0.3s ease'
-        }}>
-          {velocityKmh.toFixed(1)}
-        </div>
-      </div>
-
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 0 }} />
-
-      {/* --- MODO (BOTÃO ÚNICO) --- */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-        <div style={{ fontSize: '0.75rem', opacity: 0.6, letterSpacing: '1px', textTransform: 'uppercase' }}>
+      {/* --- MODO DE OPERAÇÃO --- */}
+      <div style={{ display: 'flex', flexDirection: 'column' }}>
+        <div style={{ fontSize: '0.7rem', color: '#ffffff', textAlign: 'center', letterSpacing: '2px', textTransform: 'uppercase', marginBottom: '6px' }}>
           Operation Mode
         </div>
         <button
@@ -201,40 +247,23 @@ export function DashboardPanel({ ros, robotName }) {
           style={{
             background: getModeColor(),
             border: 'none',
-            borderRadius: '8px',
-            padding: '5px',
+            borderRadius: '6px',
+            padding: '8px',
             cursor: 'pointer',
             fontWeight: 'bold',
-            fontSize: '1rem',
+            fontSize: '0.9rem',
             color: '#111',
             transition: 'all 0.3s ease',
             textTransform: 'uppercase',
-            letterSpacing: '1px'
+            letterSpacing: '1px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+            width: '100%' // Garante que o botão ocupe a largura total
           }}
-          onMouseEnter={(e) => e.target.style.opacity = '0.8'}
+          onMouseEnter={(e) => e.target.style.opacity = '0.9'}
           onMouseLeave={(e) => e.target.style.opacity = '1'}
         >
           {currentMode}
         </button>
-      </div>
-
-      <hr style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: 0 }} />
-
-      {/* --- BATERIA --- */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        <div style={{ fontSize: '0.75rem', opacity: 0.6, letterSpacing: '1px', textTransform: 'uppercase' }}>
-          Battery Charge
-        </div>
-        <div style={{
-          fontSize: '2rem',
-          fontWeight: 'bold',
-          color: getBatteryColor(batteryPercentage),
-          fontFamily: 'monospace',
-          textAlign: 'center',
-          transition: 'color 0.3s ease'
-        }}>
-          {batteryPercentage !== null ? `${batteryPercentage}%` : '--'}
-        </div>
       </div>
 
     </div>
@@ -243,5 +272,6 @@ export function DashboardPanel({ ros, robotName }) {
 
 DashboardPanel.propTypes = {
   ros: PropTypes.object,
-  robotName: PropTypes.string
+  robotName: PropTypes.string,
+  robotIp: PropTypes.string
 };

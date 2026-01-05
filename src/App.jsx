@@ -18,8 +18,8 @@ function AppContent() {
 
   // --- ESTADO DOS ROBÔS (VINDO DA API) ---
   const [robots, setRobots] = useState([
-    { id: 1, name: 'Mutley', ip: '192.168.1.142', online: false },
-    { id: 2, name: 'Darth',  ip: '192.168.0.40', online: false },
+    { id: 1, name: 'Mutley', ip: '192.168.1.90', online: false },
+    { id: 2, name: 'Darth',  ip: '192.168.0.40', online: true, hasError: true },
     { id: 3, name: 'Sim',    ip: 'localhost',    online: false }
   ]);
 
@@ -144,7 +144,7 @@ function AppContent() {
   };
 
   return (
-    <div style={{ position: 'relative', height: '100vh', width: '100vw', background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ position: 'relative', opacity: 0.8, height: '100vh', width: '100vw', background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' }}>
       
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <Map3D 
@@ -167,11 +167,11 @@ function AppContent() {
 
       <aside style={{ position: 'absolute', top: '100px', left: '20px', width: '280px', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'none' }}>
         
-        <div style={{ pointerEvents: 'auto', background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <div style={{ pointerEvents: 'auto', opacity: 0.8, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
           <FleetSelector robots={robots} activeId={activeRobotId} onSelect={setActiveRobotId} />
         </div>
 
-        <div style={{ pointerEvents: 'auto', background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
+        <div style={{ pointerEvents: 'auto', opacity: 0.8, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '10px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#ccc', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px' }}>
                 NAV2 CONTROL
             </div>
@@ -222,15 +222,13 @@ function AppContent() {
         </div>
       </aside>
 
-      <aside style={{ position: 'absolute', top: '20px', right: '20px', width: '320px', zIndex: 10, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'auto', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '10px' }}>
-           <span style={{ fontSize: '0.9rem', fontWeight: 'bold', textTransform: 'uppercase' }}>CONNECTION</span>
-           <div style={{ fontSize: '0.75rem', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '6px' }}>
-             <span style={{ color: isConnected ? '#00d26a' : '#ff4b5c' }}>{isConnected ? '● ONLINE' : '● OFFLINE'}</span>
-             <span style={{ background: 'rgba(0,0,0,0.4)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', opacity: 0.8 }}>{activeRobot?.ip}</span>
-           </div>
-        </div>
-        <DashboardPanel ros={ros} robotName={activeRobot?.name} />
+      <aside style={{ position: 'absolute', opacity: 0.8, top: '20px', right: '20px', width: '320px', zIndex: 10, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'auto', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' }}>
+        {/* Header removido daqui, IP passado como prop abaixo */}
+        <DashboardPanel 
+          ros={ros} 
+          robotName={activeRobot?.name} 
+          robotIp={activeRobot?.ip}
+        />
       </aside>
 
       <Joystick ros={ros} />
