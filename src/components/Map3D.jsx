@@ -132,6 +132,12 @@ export function Map3D({ ros, showFootprint, viewMode, activeTool, setActiveTool 
         // Aplica a rotação de 180 graus diretamente no modelo carregado
         robot.rotation.z = Math.PI;
         robot.position.z = 0.23;
+
+        // --- CORREÇÃO DE OFFSET (AQUI) ---
+        // Ajuste este valor: Se for para frente demais, tente positivo (ex: 0.12)
+        // Se precisar ir mais para trás, aumente o negativo (ex: -0.20)
+        robot.position.x = 0.05; 
+        
         robot.traverse(c => { c.castShadow = true; c.receiveShadow = true; });
         visualRotationGroup.add(robot); 
     });
