@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import { useNotification } from '../context/NotificationContext';
 
 export function DashboardPanel({ ros, robotName, robot }) { 
+  const [isOpen, setIsOpen] = useState(false);
   const [velocityKmh, setVelocityKmh] = useState(0.0);
   const [currentMode, setCurrentMode] = useState('UNKNOWN');
   const [batteryPercentage, setBatteryPercentage] = useState(null);
@@ -17,13 +18,9 @@ export function DashboardPanel({ ros, robotName, robot }) {
   // --- LÓGICA DE ALERTA ---
   const getPanelAlertState = () => {
     if (robot && !robot.online) return { isCritical: true, label: 'OFF', color: '#ff4b5c' };
-    
-    const isLowBatAPI = robot?.battery_level !== undefined && robot?.battery_level !== null && robot.battery_level < 20;
-    const isLowBatROS = batteryPercentage !== null && batteryPercentage < 20;
-    if (isLowBatAPI || isLowBatROS) return { isCritical: true, label: 'LOW BAT', color: '#ff9f43' };
-    
+    const isLowBat = (robot?.battery_level !== undefined && robot.battery_level < 20) || (batteryPercentage !== null && batteryPercentage < 20);
+    if (isLowBat) return { isCritical: true, label: 'LOW BAT', color: '#ff9f43' };
     if (robot?.status === 'BLOCKED') return { isCritical: true, label: 'BLOCKED', color: '#ff9f43' };
-    
     return { isCritical: false, label: null, color: null };
   };
 
@@ -67,7 +64,8 @@ export function DashboardPanel({ ros, robotName, robot }) {
     return () => { if (modeListenerRef.current) modeListenerRef.current.unsubscribe(); };
   }, [ros, addNotification]);
 
-  const cycleMode = () => {
+  const cycleMode = (e) => {
+    e.stopPropagation();
     if (alertState.isCritical && alertState.label === 'OFF') return;
     let nextModeId = 0;
     if (currentMode === 'MANUAL') nextModeId = 1;
@@ -78,100 +76,126 @@ export function DashboardPanel({ ros, robotName, robot }) {
     service.callService(request, () => addNotification(`✅ Modo alterado`), () => addNotification(`❌ Erro ao alterar`));
   };
 
-  // --- ESTILOS ---
-  const getButtonStyle = () => {
-    if (alertState.isCritical) return { color: alertState.color, borderColor: alertState.color, background: `${alertState.color}26` };
+  const getButtonColor = () => {
+    if (alertState.isCritical) return alertState.color;
     switch (currentMode) {
-      case 'AUTONOMOUS': return { color: '#f6d365', borderColor: '#f6d365', background: 'rgba(246, 211, 101, 0.15)' };
-      case 'MANUAL': return { color: '#00d26a', borderColor: '#00d26a', background: 'rgba(0, 210, 106, 0.15)' };
-      case 'MAPPING': return { color: '#00e5ff', borderColor: '#00e5ff', background: 'rgba(0, 229, 255, 0.15)' };
-      default: return { color: '#ccc', borderColor: '#ccc', background: 'rgba(255, 255, 255, 0.1)' };
+      case 'AUTONOMOUS': return '#f6d365';
+      case 'MANUAL': return '#00d26a';
+      case 'MAPPING': return '#00e5ff';
+      default: return '#ccc';
     }
   };
 
-  const btnStyle = getButtonStyle();
-  // Fonte reduzida e condensada para os valores
-  const valueStyle = { fontFamily: 'monospace', fontWeight: 'bold', lineHeight: '1', color: '#ffffff', fontSize: '0.8rem' };
+  const mainColor = alertState.isCritical ? alertState.color : '#00d26a';
+  const btnColor = getButtonColor();
+
+  // Estilos auxiliares para os dados no cabeçalho
+  const infoLabelStyle = { fontSize: '0.6rem', color: '#888', fontWeight: 'bold', marginRight: '4px' };
+  const infoValueStyle = { fontFamily: 'monospace', fontWeight: 'bold', fontSize: '0.9rem', color: '#fff' };
 
   return (
-    <div style={{
-      background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)',
-      border: alertState.isCritical ? '1px solid #ff4b5c' : '1px solid rgba(255,255,255,0.08)',
-      boxShadow: alertState.isCritical ? '0 0 15px rgba(255, 75, 92, 0.2)' : 'none',
-      animation: alertState.isCritical ? 'pulse-red 2s infinite' : 'none',
-      borderRadius: '8px', 
-      padding: '6px 10px', 
-      display: 'flex', 
-      flexDirection: 'row', 
-      alignItems: 'center',
-      justifyContent: 'space-between', 
-      width: '100%', 
-      boxSizing: 'border-box', 
-      overflow: 'hidden',
-      height: '52px' // Altura fixa levemente maior para caber as 2 linhas
+    <div 
+      onClick={() => setIsOpen(!isOpen)}
+      style={{
+        position: 'fixed',
+        top: '0',
+        left: '50%',
+        transform: 'translateX(-50%)',
+        zIndex: 1000,
+        
+        background: 'rgba(19, 21, 31, 0.95)',
+        backdropFilter: 'blur(12px)',
+        borderLeft: `1px solid ${mainColor}`,
+        borderRight: `1px solid ${mainColor}`,
+        borderBottom: `1px solid ${mainColor}`,
+        borderTop: 'none',
+        
+        boxShadow: `0 4px 20px ${mainColor}40`,
+        borderRadius: '0 0 16px 16px',
+        
+        width: '420px', // Aumentei um pouco a largura para caber tudo no topo
+        transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        overflow: 'hidden',
+        cursor: 'pointer',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
     }}>
-      <style>{`@keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0.7); border-color: rgba(255, 75, 92, 1); } 70% { box-shadow: 0 0 0 10px rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 0.5); } 100% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 1); } }`}</style>
 
-      {/* --- COLUNA ESQUERDA: NOME (EM CIMA) + DADOS (EMBAIXO) --- */}
+      {/* --- CABEÇALHO (AGORA COM DADOS) --- */}
       <div style={{ 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'center',
-        gap: '4px', // Espaço entre nome e dados
-        flex: '1',
-        marginRight: '10px'
+        width: '100%', padding: '12px 20px', 
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        borderBottom: isOpen ? '1px solid rgba(255,255,255,0.1)' : 'none'
       }}>
         
-        {/* NOME (Reduzido, em cima) */}
-        <span style={{ 
-          color: '#ffffff', fontWeight: 'bold', fontSize: '0.75rem', 
-          letterSpacing: '0.5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-          textTransform: 'uppercase', opacity: 0.9
-        }}>
-          {robotName || 'BOT'}
-        </span>
-
-        {/* DADOS (Speed | Bat) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          
-          <span style={valueStyle}>
-            {velocityKmh.toFixed(1)}<span style={{fontSize: '0.7em', opacity: 0.6, fontWeight: 'normal', marginLeft:'1px'}}>km</span>
+        {/* ESQUERDA: Led + Nome */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: mainColor, boxShadow: `0 0 10px ${mainColor}` }}></div>
+          <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem', letterSpacing: '1px', textTransform: 'uppercase' }}>
+            {robotName || 'SELECT ROBOT'}
           </span>
+        </div>
 
-          <div style={{ width: '1px', height: '10px', background: 'rgba(255,255,255,0.2)' }}></div>
+        {/* DIREITA: Speed + Bat + Seta */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+            
+            {/* Speed */}
+            <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={infoValueStyle}><span style={{fontSize: '0.7em', color:'#aaa', fontWeight:'normal'}}>SPEED:</span> 
+                    {velocityKmh.toFixed(1)} <span style={{fontSize: '0.7em', color:'#aaa', fontWeight:'normal'}}>km/h</span>
+                </span>
+            </div>
 
-          <span style={valueStyle}>
-            {batteryPercentage !== null ? batteryPercentage : '--'}<span style={{fontSize: '0.7em', opacity: 0.6, fontWeight: 'normal', marginLeft:'1px'}}>%</span>
-          </span>
+            {/* Divisor Fino */}
+            <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.2)' }}></div>
 
+            {/* Battery */}
+            <div style={{ display: 'flex', alignItems: 'baseline' }}>
+                <span style={infoValueStyle}><span style={{fontSize: '0.7em', color:'#aaa', fontWeight:'normal'}}>BATTERY:</span> 
+                    {batteryPercentage !== null ? batteryPercentage : '--'} <span style={{fontSize: '0.7em', color:'#aaa', fontWeight:'normal'}}>%</span>
+                </span>
+            </div>
+
+            {/* Seta */}
+            <div style={{ 
+              transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)', 
+              transition: 'transform 0.3s',
+              color: '#aaa', fontSize: '0.8rem', marginLeft: '5px'
+            }}>
+              ▼
+            </div>
         </div>
       </div>
 
-      {/* --- COLUNA DIREITA: BOTÃO --- */}
-      <button 
-        onClick={cycleMode} 
-        style={{ 
-          display: 'flex', justifyContent: 'center', alignItems: 'center', 
-          background: btnStyle.background, 
-          border: `1px solid ${btnStyle.borderColor}`, 
-          color: btnStyle.color,
-          borderRadius: '6px', 
-          padding: '0 10px', // Padding lateral interno
-          height: '36px',    // Altura fixa para alinhar com o bloco da esquerda
-          cursor: alertState.isCritical ? 'not-allowed' : 'pointer', 
-          fontWeight: 'bold', fontSize: '0.75rem', 
-          transition: 'all 0.3s ease', textTransform: 'uppercase', letterSpacing: '1px',
-          minWidth: '85px', 
-          flexShrink: 0 
-        }} 
-        onMouseEnter={(e) => { if(!alertState.isCritical) e.target.style.opacity = '0.8'; }} 
-        onMouseLeave={(e) => { if(!alertState.isCritical) e.target.style.opacity = '1'; }}
-      >
-        {alertState.isCritical ? (
-          <span style={{display: 'flex', alignItems: 'center', gap: '4px'}}>⚠️ {alertState.label}</span>
-        ) : currentMode}
-      </button>
+      {/* --- CONTEÚDO EXPANDÍVEL (APENAS BOTÃO DE MODO) --- */}
+      <div style={{ 
+        height: isOpen ? '60px' : '0px', // Altura reduzida pois só tem o botão
+        opacity: isOpen ? 1 : 0,
+        width: '100%',
+        transition: 'all 0.3s ease',
+        display: 'flex', flexDirection: 'column', justifyContent: 'center',
+        padding: isOpen ? '0 20px 15px 20px' : '0 20px',
+        pointerEvents: isOpen ? 'auto' : 'none'
+      }}>
+        
+        <button 
+          onClick={cycleMode}
+          style={{
+            width: '100%', padding: '10px', borderRadius: '8px',
+            background: `${btnColor}20`,
+            border: `1px solid ${btnColor}`,
+            color: btnColor,
+            fontWeight: 'bold', fontSize: '0.95rem', letterSpacing: '2px', textTransform: 'uppercase',
+            cursor: alertState.isCritical ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: `0 2px 10px ${btnColor}20`
+          }}
+        >
+          {alertState.isCritical ? `⚠️ ${alertState.label}` : currentMode}
+        </button>
 
+      </div>
     </div>
   );
 }

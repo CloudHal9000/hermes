@@ -3,96 +3,149 @@ import PropTypes from 'prop-types';
 
 export function FleetSelector({ robots, activeId, onSelect }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterType, setFilterType] = useState('ALL'); // ALL, IDLE, BUSY, ERROR
+  const [filterType, setFilterType] = useState('ALL');
 
-  // --- 1. LÓGICA DE DIAGNÓSTICO DO ROBÔ ---
-  const getRobotDiagnosis = (robot) => {
-    // CASO 1: ERRO (Perda de Comunicação)
+  // --- TABELA DE CORES (Baseada no image_8521ec.png) ---
+  const COLORS = {
+    RED: '#ff4b5c',      // Erro / Alerta
+    GREEN: '#00d26a',    // Disponível (Auto + Idle)
+    BLUE: '#00e5ff',     // Ocupado (Auto + Busy)
+    YELLOW: '#f6d365',   // Manual
+    ORANGE: '#ff9f43',   // Mapping
+    GRAY: '#666'         // Manutenção / Offline
+  };
+
+  const getRobotVisualState = (robot) => {
+    // 1. OFFLINE (Visual Imagem 85847e.png - QDD48)
     if (!robot.online) {
-      return { status: 'ERROR', label: 'OFF', color: '#ff4b5c', type: 'COMM_LOSS' };
+      return { 
+        containerColor: COLORS.RED,
+        priority: 1,
+        isPulsing: true,
+        badges: [
+          { text: '⚠️ ALERT', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.15)', border: COLORS.YELLOW }, // Topo
+          { text: 'OFF', color: '#999', bg: 'rgba(0,0,0,0.2)', border: '#666' } // Fundo
+        ]
+      };
     }
 
-    // CASO 2: ALERTAS
+    // 2. LOW BATTERY (Visual Imagem 07301e.png - QDD47 - Badge Único Grande)
     if (robot.battery_level !== null && robot.battery_level < 20) {
-      return { status: 'ALERT', label: 'LOW BAT', color: '#ff9f43', type: 'WARNING' };
-    }
-    if (robot.status === 'BLOCKED' || (robot.mode && robot.mode.toUpperCase() === 'ERROR')) {
-       return { status: 'ALERT', label: 'BLOCKED', color: '#ff9f43', type: 'WARNING' };
+      return { 
+        containerColor: COLORS.RED,
+        priority: 1,
+        isPulsing: true,
+        badges: [
+          { text: '⚠️ LOW BAT', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.15)', border: COLORS.YELLOW, fullWidth: true }
+        ]
+      };
     }
 
-    // CASO 3: NORMAL
+    // 3. BLOCKED (Similar a Low Bat)
+    if (robot.status === 'BLOCKED' || robot.hasError) {
+      return { 
+        containerColor: COLORS.RED,
+        priority: 1,
+        isPulsing: true,
+        badges: [
+          { text: '⚠️ BLOCKED', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.15)', border: COLORS.YELLOW, fullWidth: true }
+        ]
+      };
+    }
+
     const mode = robot.mode ? robot.mode.toUpperCase() : '';
-    const isBusy = ['MANUAL', 'MAPPING', 'CHARGING', 'NAVIGATING'].includes(mode) || 
-                   (mode === 'AUTONOMOUS' && robot.isBusy);
-    
+
+    // 4. MANUAL (Amarelo)
+    if (mode === 'MANUAL') {
+      return { 
+        containerColor: COLORS.GREEN, // Imagem mostra container verde para manual (MUTLEY)
+        priority: 4,
+        isPulsing: false,
+        badges: [
+          { text: '● BUSY', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.3)' },
+          { text: 'MANU', color: COLORS.GREEN, bg: 'rgba(0, 210, 106, 0.1)', border: COLORS.GREEN }
+        ]
+      };
+    }
+
+    // 5. MAPPING (Laranja/Azul na imagem)
+    if (mode === 'MAPPING') {
+      return { 
+        containerColor: COLORS.GREEN, // Imagem QDD50
+        priority: 5,
+        isPulsing: false,
+        badges: [
+          { text: '● BUSY', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.3)' },
+          { text: 'MAP', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.1)', border: COLORS.BLUE } // Imagem mostra MAP azul
+        ]
+      };
+    }
+
+    // AUTONOMOUS
+    if (mode === 'AUTONOMOUS') {
+      if (robot.isBusy) {
+        // OCUPADO
+        return { 
+          containerColor: COLORS.GREEN,
+          priority: 3,
+          isPulsing: false,
+          badges: [
+            { text: '● BUSY', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.3)' },
+            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW } // Imagem QDD46
+          ]
+        };
+      } else {
+        // DISPONÍVEL (IDLE)
+        return { 
+          containerColor: COLORS.GREEN,
+          priority: 2,
+          isPulsing: false,
+          badges: [
+            { text: 'IDLE', color: '#888', bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.1)' },
+            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW } // Imagem QDD45
+          ]
+        };
+      }
+    }
+
+    // DEFAULT
     return { 
-      status: isBusy ? 'BUSY' : 'IDLE', 
-      label: formatModeLabel(mode),
-      color: isBusy ? '#00e5ff' : '#666',
-      type: 'NORMAL'
+      containerColor: COLORS.GRAY,
+      priority: 6,
+      isPulsing: false,
+      badges: [{ text: '---', color: '#666', bg: 'transparent', border: '#666' }]
     };
   };
 
-  const formatModeLabel = (mode) => {
-    if (!mode) return '---';
-    const m = mode.toUpperCase();
-    if (m === 'CHARGING') return '⚡ CHRG';
-    if (m === 'AUTONOMOUS') return 'AUTO';
-    if (m === 'MAPPING') return 'MAP';
-    if (m === 'MANUAL') return 'MANU';
-    return m.slice(0, 4).toLowerCase(); 
-  };
+  // --- FILTRAGEM (Remove o robô ativo da lista) ---
+  const visibleRobots = robots.filter(r => r.id !== activeId);
 
-  // --- 2. FILTRAGEM ---
-  const filteredRobots = robots.filter(robot => {
-    const matchesSearch = robot.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const diagnosis = getRobotDiagnosis(robot);
-    
-    if (filterType === 'ALL') return matchesSearch;
-    if (filterType === 'ERROR') return matchesSearch && diagnosis.status === 'ERROR';
-    if (filterType === 'ALERT') return matchesSearch && diagnosis.status === 'ALERT';
-    if (filterType === 'BUSY') return matchesSearch && diagnosis.status === 'BUSY';
-    if (filterType === 'IDLE') return matchesSearch && diagnosis.status === 'IDLE';
-    
-    return matchesSearch;
+  const filteredRobots = visibleRobots.filter(robot => {
+    return robot.name.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
-  // --- 3. ORDENAÇÃO ---
+  // --- ORDENAÇÃO ---
   const sortedRobots = [...filteredRobots].sort((a, b) => {
-    const getPriority = (r) => {
-      const diag = getRobotDiagnosis(r);
-      if (diag.status === 'ERROR') return 0; // Prioridade Máxima
-      if (diag.status === 'ALERT') return 1;
-      if (diag.status === 'IDLE') return 2;
-      return 3; 
-    };
-    const pA = getPriority(a);
-    const pB = getPriority(b);
-    if (pA !== pB) return pA - pB;
+    const visualA = getRobotVisualState(a);
+    const visualB = getRobotVisualState(b);
+    if (visualA.priority !== visualB.priority) return visualA.priority - visualB.priority;
     return a.name.localeCompare(b.name);
   });
 
-  const getModeStyle = (mode) => {
-    const m = mode ? mode.toUpperCase() : '';
-    if (m === 'AUTONOMOUS') return { color: '#f6d365', border: '#f6d365', bg: 'rgba(246, 211, 101, 0.1)' };
-    if (m === 'MANUAL') return { color: '#00d26a', border: '#00d26a', bg: 'rgba(0, 210, 106, 0.1)' };
-    if (m === 'MAPPING') return { color: '#00e5ff', border: '#00e5ff', bg: 'rgba(0, 229, 255, 0.1)' };
-    if (m === 'CHARGING') return { color: '#ff9f43', border: '#ff9f43', bg: 'rgba(255, 159, 67, 0.1)' };
-    return { color: '#666', border: '#666', bg: 'rgba(255,255,255,0.05)' };
-  };
-
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%' }}>
+      
+      {/* CSS DA ANIMAÇÃO PULSE (Restaurada) */}
       <style>
         {`
           @keyframes pulse-red {
-            0% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0.7); border-color: rgba(255, 75, 92, 1); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 0.5); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 1); }
+            0% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0.4); border-color: rgba(255, 75, 92, 0.8); }
+            70% { box-shadow: 0 0 0 6px rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 0.3); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 75, 92, 0); border-color: rgba(255, 75, 92, 0.8); }
           }
           .fleet-list::-webkit-scrollbar { width: 4px; }
           .fleet-list::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
-          .fleet-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); borderRadius: 4px; }
+          .fleet-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
         `}
       </style>
 
@@ -100,7 +153,7 @@ export function FleetSelector({ robots, activeId, onSelect }) {
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#ccc', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>FLEET CONTROL</span>
-          <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{robots.length}</span>
+          <span style={{ fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)', padding: '2px 6px', borderRadius: '4px' }}>{sortedRobots.length}</span>
         </div>
         <input type="text" placeholder="🔍 Search robot..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)}
           style={{ width: '100%', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '6px', padding: '8px', color: '#fff', fontSize: '0.8rem', marginBottom: '8px', outline: 'none' }}
@@ -115,64 +168,49 @@ export function FleetSelector({ robots, activeId, onSelect }) {
         </div>
       </div>
 
-      {/* LISTA */}
-      <div className="fleet-list" style={{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '70vh', paddingRight: '4px' }}>
-        {sortedRobots.length === 0 && <div style={{ textAlign: 'center', color: '#666', fontSize: '0.8rem', padding: '20px' }}>No robots found.</div>}
+      {/* LISTA DE ROBÔS */}
+      <div className="fleet-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '70vh', paddingRight: '4px' }}>
+        {sortedRobots.length === 0 && <div style={{ textAlign: 'center', color: '#666', fontSize: '0.8rem', padding: '20px' }}>No other robots.</div>}
 
         {sortedRobots.map((robot) => {
-          const isActive = robot.id === activeId;
-          const diag = getRobotDiagnosis(robot);
-          const modeStyle = getModeStyle(robot.mode);
-          const isCritical = diag.status === 'ERROR' || diag.status === 'ALERT';
-
+          const visual = getRobotVisualState(robot);
+          
           return (
             <button key={robot.id} onClick={() => onSelect(robot.id)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-                background: isCritical ? 'rgba(255, 75, 92, 0.1)' : (isActive ? 'rgba(0, 210, 106, 0.08)' : 'rgba(255, 255, 255, 0.03)'),
-                border: isCritical ? '1px solid #ff4b5c' : (isActive ? '1px solid #00d26a' : '1px solid rgba(255, 255, 255, 0.1)'),
-                borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', transition: 'all 0.2s ease', position: 'relative', overflow: 'visible',
-                animation: isCritical ? 'pulse-red 2s infinite' : 'none', 
-                minHeight: '58px' // Garante a altura do botão mesmo com 1 badge
+                background: `${visual.containerColor}08`, // Fundo muito sutil
+                border: `1px solid ${visual.containerColor}50`, 
+                borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', 
+                minHeight: '60px',
+                // Animação de pulso se for crítico
+                animation: visual.isPulsing ? 'pulse-red 2s infinite' : 'none',
+                boxShadow: visual.isPulsing ? 'none' : '0 2px 5px rgba(0,0,0,0.2)'
               }}
             >
-              {/* ESQUERDA: Led + Nome */}
+              {/* LED E NOME */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: isCritical ? '#ff4b5c' : '#00d26a', boxShadow: !isCritical ? '0 0 8px #00d26a' : 'none', flexShrink: 0 }}></div>
-                <span style={{ color: isActive ? '#fff' : '#aaa', fontWeight: 'bold', fontSize: '0.95rem', textTransform: 'uppercase', letterSpacing: '0.5px', textAlign: 'left', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '95px' }}>
+                <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: visual.containerColor, boxShadow: `0 0 8px ${visual.containerColor}`, flexShrink: 0 }}></div>
+                <span style={{ color: '#eee', fontWeight: 'bold', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                   {robot.name}
                 </span>
               </div>
 
-              {/* DIREITA: Badges */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', justifyContent: 'center' }}>
-                
-                {/* LÓGICA PADRONIZADA: ERRO E ALERTA AGORA SÃO IGUAIS VISUALMENTE */}
-                {(diag.status === 'ERROR' || diag.status === 'ALERT') ? (
-                   // VISUAL PADRÃO DE ALERTA (Amarelo, 1 badge único)
-                   <div style={{ fontSize: '0.65rem', fontWeight: 'bold', padding: '4px 8px', borderRadius: '3px', 
-                      background: 'rgba(255, 159, 67, 0.2)', color: '#ff9f43', border: '1px solid #ff9f43', 
-                      textAlign: 'center', minWidth: '60px' 
-                   }}>
-                      ⚠️ {diag.label}
-                   </div>
-                ) : (
-                  // NORMAL (2 badges: Status + Mode)
-                  <>
-                    <div style={{ fontSize: '0.6rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '3px', 
-                        background: diag.status === 'BUSY' ? 'rgba(0, 229, 255, 0.15)' : 'rgba(255, 255, 255, 0.05)',
-                        color: diag.status === 'BUSY' ? '#00e5ff' : '#666',
-                        border: diag.status === 'BUSY' ? '1px solid rgba(0, 229, 255, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
-                        display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', minWidth: '55px'
+              {/* BADGES (Dinâmico: 1 ou 2 badges) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', minWidth: '70px' }}>
+                  
+                  {visual.badges.map((badge, idx) => (
+                    <div key={idx} style={{ 
+                        fontSize: '0.6rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '3px',
+                        background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`,
+                        width: badge.fullWidth ? 'auto' : '100%', // Se for badge único, auto largura fica melhor ou full? Imagem 47 tem largura fixa
+                        minWidth: '60px', textAlign: 'center',
+                        marginTop: (visual.badges.length === 1 && idx === 0) ? '0' : '0' // Centraliza se for 1? Não, flex lida com isso
                     }}>
-                        {diag.status === 'BUSY' && <span style={{ display: 'block', width: '3px', height: '3px', borderRadius: '50%', background: '#00e5ff', boxShadow: '0 0 4px #00e5ff' }}></span>}
-                        {diag.status}
+                        {badge.text}
                     </div>
-                    <div style={{ fontSize: '0.6rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '3px', background: modeStyle.bg, color: modeStyle.color, border: `1px solid ${modeStyle.border}`, opacity: 0.8, textAlign: 'center', minWidth: '55px' }}>
-                        {diag.label}
-                    </div>
-                  </>
-                )}
+                  ))}
+
               </div>
             </button>
           );

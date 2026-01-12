@@ -40,6 +40,7 @@ function AppContent() {
             status: robot.status, 
             battery_level: robot.battery_level,
             mode: robot.mode,
+            isBusy: robot.isBusy || false, // Garantir campo
             hasError: robot.has_error || false 
           }));
 
@@ -88,42 +89,40 @@ function AppContent() {
   return (
     <div style={{ position: 'relative', opacity: 0.8, height: '100vh', width: '100vw', background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' }}>
       
-      {/* --- FUNDO 3D --- */}
+      {/* 1. FUNDO 3D */}
       <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
         <Map3D ros={ros} showFootprint={showFootprint} viewMode={viewMode} activeTool={activeTool} setActiveTool={setActiveTool} />
       </div>
 
-      {/* --- BARRA TOPO --- */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '80px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
+      {/* 2. ROLLDOWN CENTRAL (HUD DO ROBÔ ATIVO) - Centralizado no topo */}
+      <DashboardPanel ros={ros} robotName={activeRobot?.name} robot={activeRobot} />
+
+      {/* 3. LOGO (Canto Superior Esquerdo) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '300px', height: '80px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', pointerEvents: 'auto' }}>
           <LogoUploader />
           <h1 style={{ margin: 0, fontSize: '1.5rem', letterSpacing: '2px', fontWeight: '800', color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>FREEBOTICS STUDIO</h1>
         </div>
       </div>
 
-      {/* --- SIDEBAR ESQUERDA (APENAS FLEET) --- */}
+      {/* 4. SIDEBAR ESQUERDA (FLEET CONTROL) */}
       <aside style={{ 
         position: 'absolute', top: '100px', left: '20px', width: '280px', zIndex: 10, 
         display: 'flex', flexDirection: 'column', gap: '15px', pointerEvents: 'none' 
       }}>
-        
         <div style={{ pointerEvents: 'auto', opacity: 0.8, background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px', boxShadow: '0 8px 32px rgba(0,0,0,0.5)' }}>
           <FleetSelector robots={robots} activeId={activeRobotId} onSelect={setActiveRobotId} />
         </div>
-
       </aside>
 
-      {/* --- SIDEBAR DIREITA (WIDGET + COMANDOS) --- */}
+      {/* 5. SIDEBAR DIREITA (APENAS COMANDOS DE NAVEGAÇÃO) */}
       <aside style={{ 
-        position: 'absolute', opacity: 0.8, top: '20px', right: '20px', width: '300px', zIndex: 10, 
+        position: 'absolute', opacity: 0.8, top: '100px', right: '20px', width: '280px', zIndex: 10, 
         display: 'flex', flexDirection: 'column', gap: '12px', 
-        pointerEvents: 'auto', maxHeight: 'calc(100vh - 40px)', overflowY: 'auto' 
+        pointerEvents: 'auto', maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' 
       }}>
         
-        {/* 1. WIDGET DE STATUS (Slim) */}
-        <DashboardPanel ros={ros} robotName={activeRobot?.name} robot={activeRobot} />
-
-        {/* 2. NAV2 CONTROL (Movido da esquerda) */}
+        {/* NAV2 CONTROL */}
         <div style={{ background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '15px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
             <div style={{ fontSize: '0.8rem', fontWeight: 'bold', color: '#ccc', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px', marginBottom:'5px' }}>NAV2 CONTROL</div>
             
@@ -140,7 +139,7 @@ function AppContent() {
             </button>
         </div>
 
-        {/* 3. NAVIGATION (Movido da esquerda) */}
+        {/* NAVIGATION LAYERS */}
         <div>
           <NavigationControl ros={ros} isRoslibReady={isRoslibReady} showFootprint={showFootprint} setShowFootprint={setShowFootprint} viewMode={viewMode} setViewMode={setViewMode} />
         </div>
