@@ -135,10 +135,10 @@ function AppContent() {
       <DashboardPanel ros={ros} robotName={activeRobot?.name} robot={activeRobot} />
 
       {/* 3. LOGO (Canto Superior Esquerdo) */}
-      <div style={{ position: 'absolute', top: 0, left: 0, width: '300px', height: '80px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
+      <div style={{ position: 'absolute', top: 0, left: 0, width: '300px', height: '60px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', pointerEvents: 'auto' }}>
           <LogoUploader />
-          <h1 style={{ margin: 0, fontSize: '1.5rem', letterSpacing: '2px', fontWeight: '800', color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>FREEBOTICS STUDIO</h1>
+          <h1 style={{ margin: 0, fontSize: '1.3rem', letterSpacing: '2px', fontWeight: '800', color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>FREEBOTICS STUDIO</h1>
         </div>
       </div>
 
