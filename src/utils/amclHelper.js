@@ -1,4 +1,4 @@
-// import ROSLIB from 'roslib';
+// Importação compatível com window.ROSLIB
 const ROSLIB = window.ROSLIB;
 
 /**
@@ -31,7 +31,6 @@ export class AMCLHelper {
     const qz = Math.sin(yawRad / 2);
     const qw = Math.cos(yawRad / 2);
 
-    // Usamos as classes diretamente do objeto ROSLIB importado.
     const topic = new ROSLIB.Topic({
       ros: this.ros,
       name: '/initialpose',
@@ -57,7 +56,6 @@ export class AMCLHelper {
     return true;
   }
 
-  // ... (funções completas)
   setGoal(x, y, yawDeg) {
     if (!this.ros.isConnected) { return false; }
     const posX = parseFloat(x);
@@ -76,7 +74,7 @@ export class AMCLHelper {
     topic.publish(msg);
     return true;
   }
-
+  
   reinitializeGlobalLocalization() {
     if (!this.ros.isConnected) { return; }
     const service = new ROSLIB.Service({ ros: this.ros, name: '/reinitialize_global_localization', serviceType: 'std_srvs/srv/Empty' });

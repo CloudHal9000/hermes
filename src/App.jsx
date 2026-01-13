@@ -32,8 +32,7 @@ function AppContent() {
       try {
         console.log('Fetching robots from API...');
         
-        // Adicionar mais detalhes de depuração
-        const fullUrl = `${import.meta.env.VITE_API_URL}/api/robots`;
+        const fullUrl = `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/robots`;
         console.log('Full URL:', fullUrl);
         
         const response = await fetch(fullUrl, {
