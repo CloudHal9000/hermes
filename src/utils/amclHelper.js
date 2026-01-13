@@ -1,5 +1,5 @@
-// A sintaxe que funciona no seu App.js e, portanto, deve funcionar aqui.
-import * as ROSLIB from 'roslib';
+// import ROSLIB from 'roslib';
+const ROSLIB = window.ROSLIB;
 
 /**
  * Classe auxiliar para interagir com o AMCL e a pilha de navegação do ROS2.
@@ -76,7 +76,7 @@ export class AMCLHelper {
     topic.publish(msg);
     return true;
   }
-  
+
   reinitializeGlobalLocalization() {
     if (!this.ros.isConnected) { return; }
     const service = new ROSLIB.Service({ ros: this.ros, name: '/reinitialize_global_localization', serviceType: 'std_srvs/srv/Empty' });
