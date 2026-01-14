@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import * as ROSLIB from 'roslib';
+
 
 export function useRos(robotIp) {
   const [ros, setRos] = useState(null);
@@ -18,7 +18,12 @@ export function useRos(robotIp) {
     const url = `ws://${robotIp}:9090`;
     console.log(`Attempting to connect to: ${url}`);
 
-    const rosConnection = new ROSLIB.Ros({ url });
+    if (!window.window.ROSLIB) {
+      console.error("window.ROSLIB is not loaded!");
+      return;
+    }
+
+    const rosConnection = new window.window.ROSLIB.Ros({ url });
 
     rosConnection.on('connection', () => {
       console.log(`Connected to robot at ${robotIp}!`);
@@ -41,7 +46,7 @@ export function useRos(robotIp) {
       console.log(`Closing connection to ${robotIp}`);
       rosConnection.close();
     };
-  }, [robotIp]); 
+  }, [robotIp]);
 
   return { ros, isConnected };
 }

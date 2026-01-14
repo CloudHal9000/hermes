@@ -1,35 +1,35 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 
-export function FleetSelector({ robots, activeId, onSelect }) {
+export default function FleetSelector({ robots, activeId, onSelect }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('ALL');
 
   const COLORS = {
-    RED: '#ff4b5c',      
-    GREEN: '#00d26a',    
-    BLUE: '#00e5ff',     
-    YELLOW: '#f6d365',   
-    ORANGE: '#ff9f43',   
-    GRAY: '#666'         
+    RED: '#ff4b5c',
+    GREEN: '#00d26a',
+    BLUE: '#00e5ff',
+    YELLOW: '#f6d365',
+    ORANGE: '#ff9f43',
+    GRAY: '#666'
   };
 
   const getRobotVisualState = (robot) => {
 
     if (!robot.online) {
-      return { 
+      return {
         containerColor: COLORS.RED,
         priority: 1,
         isPulsing: true,
         badges: [
-          { text: '⚠️ ALERT', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.15)', border: COLORS.YELLOW }, 
-          { text: 'OFF', color: '#999', bg: 'rgba(0,0,0,0.2)', border: '#666' } 
+          { text: '⚠️ ALERT', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.15)', border: COLORS.YELLOW },
+          { text: 'OFF', color: '#999', bg: 'rgba(0,0,0,0.2)', border: '#666' }
         ]
       };
     }
 
     if (robot.battery_level !== null && robot.battery_level < 20) {
-      return { 
+      return {
         containerColor: COLORS.RED,
         priority: 1,
         isPulsing: true,
@@ -40,7 +40,7 @@ export function FleetSelector({ robots, activeId, onSelect }) {
     }
 
     if (robot.status === 'BLOCKED' || robot.hasError) {
-      return { 
+      return {
         containerColor: COLORS.RED,
         priority: 1,
         isPulsing: true,
@@ -53,8 +53,8 @@ export function FleetSelector({ robots, activeId, onSelect }) {
     const mode = robot.mode ? robot.mode.toUpperCase() : '';
 
     if (mode === 'MANUAL') {
-      return { 
-        containerColor: COLORS.GREEN, 
+      return {
+        containerColor: COLORS.GREEN,
         priority: 4,
         isPulsing: false,
         badges: [
@@ -65,13 +65,13 @@ export function FleetSelector({ robots, activeId, onSelect }) {
     }
 
     if (mode === 'MAPPING') {
-      return { 
-        containerColor: COLORS.GREEN, 
+      return {
+        containerColor: COLORS.GREEN,
         priority: 5,
         isPulsing: false,
         badges: [
           { text: '● BUSY', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.3)' },
-          { text: 'MAP', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.1)', border: COLORS.BLUE } 
+          { text: 'MAP', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.1)', border: COLORS.BLUE }
         ]
       };
     }
@@ -79,30 +79,30 @@ export function FleetSelector({ robots, activeId, onSelect }) {
     if (mode === 'AUTONOMOUS') {
       if (robot.isBusy) {
 
-        return { 
+        return {
           containerColor: COLORS.GREEN,
           priority: 3,
           isPulsing: false,
           badges: [
             { text: '● BUSY', color: COLORS.BLUE, bg: 'rgba(0, 229, 255, 0.15)', border: 'rgba(0, 229, 255, 0.3)' },
-            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW } 
+            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW }
           ]
         };
       } else {
 
-        return { 
+        return {
           containerColor: COLORS.GREEN,
           priority: 2,
           isPulsing: false,
           badges: [
             { text: 'IDLE', color: '#888', bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.1)' },
-            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW } 
+            { text: 'AUTO', color: COLORS.YELLOW, bg: 'rgba(246, 211, 101, 0.1)', border: COLORS.YELLOW }
           ]
         };
       }
     }
 
-    return { 
+    return {
       containerColor: COLORS.GRAY,
       priority: 6,
       isPulsing: false,
@@ -126,7 +126,7 @@ export function FleetSelector({ robots, activeId, onSelect }) {
   return (
     <div style={{ width: '100%', display: 'flex', flexDirection: 'column', height: '100%' }}>
 
-      {}
+      { }
       <style>
         {`
           @keyframes pulse-red {
@@ -140,7 +140,7 @@ export function FleetSelector({ robots, activeId, onSelect }) {
         `}
       </style>
 
-      {}
+      { }
       <div style={{ flexShrink: 0 }}>
         <div style={{ fontSize: '0.9rem', fontWeight: 'bold', color: '#ccc', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '5px', marginBottom: '10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span>FLEET CONTROL</span>
@@ -159,7 +159,7 @@ export function FleetSelector({ robots, activeId, onSelect }) {
         </div>
       </div>
 
-      {}
+      { }
       <div className="fleet-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px', overflowY: 'auto', maxHeight: '70vh', paddingRight: '4px' }}>
         {sortedRobots.length === 0 && <div style={{ textAlign: 'center', color: '#666', fontSize: '0.8rem', padding: '20px' }}>No other robots.</div>}
 
@@ -170,16 +170,16 @@ export function FleetSelector({ robots, activeId, onSelect }) {
             <button key={robot.id} onClick={() => onSelect(robot.id)}
               style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%',
-                background: `${visual.containerColor}08`, 
-                border: `1px solid ${visual.containerColor}50`, 
-                borderRadius: '8px', padding: '8px 10px', cursor: 'pointer', 
+                background: `${visual.containerColor}08`,
+                border: `1px solid ${visual.containerColor}50`,
+                borderRadius: '8px', padding: '8px 10px', cursor: 'pointer',
                 minHeight: '60px',
 
                 animation: visual.isPulsing ? 'pulse-red 2s infinite' : 'none',
                 boxShadow: visual.isPulsing ? 'none' : '0 2px 5px rgba(0,0,0,0.2)'
               }}
             >
-              {}
+              { }
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: visual.containerColor, boxShadow: `0 0 8px ${visual.containerColor}`, flexShrink: 0 }}></div>
                 <span style={{ color: '#eee', fontWeight: 'bold', fontSize: '0.9rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
@@ -187,20 +187,20 @@ export function FleetSelector({ robots, activeId, onSelect }) {
                 </span>
               </div>
 
-              {}
+              { }
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignItems: 'flex-end', minWidth: '70px' }}>
 
-                  {visual.badges.map((badge, idx) => (
-                    <div key={idx} style={{ 
-                        fontSize: '0.6rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '3px',
-                        background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`,
-                        width: badge.fullWidth ? 'auto' : '100%', 
-                        minWidth: '60px', textAlign: 'center',
-                        marginTop: (visual.badges.length === 1 && idx === 0) ? '0' : '0' 
-                    }}>
-                        {badge.text}
-                    </div>
-                  ))}
+                {visual.badges.map((badge, idx) => (
+                  <div key={idx} style={{
+                    fontSize: '0.6rem', fontWeight: 'bold', padding: '2px 6px', borderRadius: '3px',
+                    background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`,
+                    width: badge.fullWidth ? 'auto' : '100%',
+                    minWidth: '60px', textAlign: 'center',
+                    marginTop: (visual.badges.length === 1 && idx === 0) ? '0' : '0'
+                  }}>
+                    {badge.text}
+                  </div>
+                ))}
 
               </div>
             </button>

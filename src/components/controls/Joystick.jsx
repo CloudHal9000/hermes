@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import nipplejs from 'nipplejs';
-import * as ROSLIB from 'roslib';
+
 import PropTypes from 'prop-types';
 
-export function Joystick({ ros }) {
+export default function Joystick({ ros }) {
   const joyRef = useRef(null);
   const [currentMode, setCurrentMode] = useState('UNKNOWN');
-  const [inputType, setInputType] = useState(null); 
+  const [inputType, setInputType] = useState(null);
 
   const linearRef = useRef(0);
   const angularRef = useRef(0);
@@ -16,8 +16,8 @@ export function Joystick({ ros }) {
 
   const activeInputRef = useRef(null);
 
-  const MAX_LIN = 0.6; 
-  const MAX_ANG = 1.0; 
+  const MAX_LIN = 0.6;
+  const MAX_ANG = 1.0;
   const TOPIC_NAME = '/hoverboard_base_controller/cmd_vel';
 
   useEffect(() => {
@@ -40,10 +40,10 @@ export function Joystick({ ros }) {
 
   const pollGamepad = () => {
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-    const gp = gamepads[0]; 
+    const gp = gamepads[0];
     if (gp) {
       const deadzone = 0.1;
-      let rawY = -gp.axes[1]; let rawX = -gp.axes[0]; 
+      let rawY = -gp.axes[1]; let rawX = -gp.axes[0];
       if (Math.abs(rawY) < deadzone) rawY = 0;
       if (Math.abs(rawX) < deadzone) rawX = 0;
       if (rawY !== 0 || rawX !== 0) return { x: rawX, y: rawY };
@@ -53,40 +53,40 @@ export function Joystick({ ros }) {
 
   const computeVelocity = useCallback(() => {
     let newType = null;
-    let lin = 0; 
+    let lin = 0;
     let ang = 0;
 
     if (isTouchingRef.current) {
-        newType = 'touch';
-        lin = linearRef.current;
-        ang = angularRef.current;
-    } 
+      newType = 'touch';
+      lin = linearRef.current;
+      ang = angularRef.current;
+    }
 
     else {
-        const gpInput = pollGamepad();
-        if (gpInput) {
-            newType = 'gamepad';
-            lin = gpInput.y * MAX_LIN;
-            ang = gpInput.x * MAX_ANG;
-        } 
+      const gpInput = pollGamepad();
+      if (gpInput) {
+        newType = 'gamepad';
+        lin = gpInput.y * MAX_LIN;
+        ang = gpInput.x * MAX_ANG;
+      }
 
-        else {
-            const k = keysPressed.current;
-            let kLin = 0, kAng = 0;
-            if (k.w) kLin += 1; if (k.s) kLin -= 1;
-            if (k.a) kAng += 1; if (k.d) kAng -= 1;
+      else {
+        const k = keysPressed.current;
+        let kLin = 0, kAng = 0;
+        if (k.w) kLin += 1; if (k.s) kLin -= 1;
+        if (k.a) kAng += 1; if (k.d) kAng -= 1;
 
-            if (kLin !== 0 || kAng !== 0) {
-                newType = 'keyboard';
-                lin = kLin * MAX_LIN;
-                ang = kAng * MAX_ANG;
-            }
+        if (kLin !== 0 || kAng !== 0) {
+          newType = 'keyboard';
+          lin = kLin * MAX_LIN;
+          ang = kAng * MAX_ANG;
         }
+      }
     }
 
     if (newType !== activeInputRef.current) {
-        activeInputRef.current = newType;
-        setInputType(newType);
+      activeInputRef.current = newType;
+      setInputType(newType);
     }
 
     return { lin, ang };
@@ -94,7 +94,7 @@ export function Joystick({ ros }) {
 
   useEffect(() => {
     if (!ros) return;
-    const modeListener = new ROSLIB.Topic({
+    const modeListener = new window.window.ROSLIB.Topic({
       ros: ros,
       name: '/robot/mode_str',
       messageType: 'std_msgs/String'
@@ -114,13 +114,13 @@ export function Joystick({ ros }) {
       zone: joyRef.current,
       mode: 'static',
       position: { left: '50%', top: '50%' },
-      color: '#00d26a', 
+      color: '#00d26a',
       size: 120,
       restOpacity: 0.8,
       dynamicPage: true
     });
 
-    const cmdVel = new ROSLIB.Topic({
+    const cmdVel = new window.window.ROSLIB.Topic({
       ros: ros,
       name: TOPIC_NAME,
       messageType: 'geometry_msgs/TwistStamped'
@@ -153,23 +153,23 @@ export function Joystick({ ros }) {
       manager.destroy();
       if (intervalRef.current) clearInterval(intervalRef.current);
     };
-  }, [ros, isAllowed, computeVelocity]); 
+  }, [ros, isAllowed, computeVelocity]);
 
   if (!ros || !isAllowed) return null;
 
   let borderColor = 'rgba(255,255,255,0.1)';
-  if (inputType === 'gamepad') borderColor = '#00e5ff'; 
-  if (inputType === 'keyboard') borderColor = '#f6d365'; 
-  if (inputType === 'touch') borderColor = '#00d26a'; 
+  if (inputType === 'gamepad') borderColor = '#00e5ff';
+  if (inputType === 'keyboard') borderColor = '#f6d365';
+  if (inputType === 'touch') borderColor = '#00d26a';
 
   return (
-    <div style={{ 
+    <div style={{
       position: 'absolute',
       bottom: '50px',
       right: '110px',
-      zIndex: 1000, 
-      width: '140px', 
-      height: '140px', 
+      zIndex: 1000,
+      width: '140px',
+      height: '140px',
       background: 'radial-gradient(circle, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.2) 70%)',
       borderRadius: '50%',
       border: `2px solid ${borderColor}`,

@@ -1,16 +1,16 @@
-import * as ROSLIB from 'roslib';
+
 
 export class SimpleTfGraph {
   constructor(ros) {
-    this.graph = {}; 
+    this.graph = {};
 
-    this.subTf = new ROSLIB.Topic({
+    this.subTf = new window.window.ROSLIB.Topic({
       ros: ros,
       name: "/tf",
       messageType: "tf2_msgs/TFMessage"
     });
 
-    this.subTfStatic = new ROSLIB.Topic({
+    this.subTfStatic = new window.window.ROSLIB.Topic({
       ros: ros,
       name: "/tf_static",
       messageType: "tf2_msgs/TFMessage"
@@ -30,7 +30,7 @@ export class SimpleTfGraph {
     if (!msg || !msg.transforms) return;
     msg.transforms.forEach((tf) => {
       const parent = tf.header.frame_id;
-      const child  = tf.child_frame_id;
+      const child = tf.child_frame_id;
       const t = tf.transform.translation;
       const q = tf.transform.rotation;
 
@@ -47,9 +47,9 @@ export class SimpleTfGraph {
 
     const existingIndex = this.graph[from].findIndex(e => e.to === to);
     if (existingIndex >= 0) {
-        this.graph[from][existingIndex] = { to, t, q };
+      this.graph[from][existingIndex] = { to, t, q };
     } else {
-        this.graph[from].push({ to: to, t: t, q: q });
+      this.graph[from].push({ to: to, t: t, q: q });
     }
   }
 
@@ -91,10 +91,10 @@ export class SimpleTfGraph {
           q: composed.q
         });
 
-        if (queue.length > 100) break; 
+        if (queue.length > 100) break;
       }
     }
-    return null; 
+    return null;
   }
 
   static _quatMultiply(a, b) {

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
-export function NavigationControl({ ros, isRoslibReady, showFootprint, setShowFootprint, viewMode, setViewMode }) {
+export default function NavigationControl({ ros, isRoslibReady, showFootprint, setShowFootprint, viewMode, setViewMode }) {
   const [poseInput, setPoseInput] = useState({ x: '0', y: '0', yaw: '0' });
   const initPoseTopicRef = useRef(null);
 
@@ -75,14 +75,14 @@ export function NavigationControl({ ros, isRoslibReady, showFootprint, setShowFo
 
   return (
     <div style={{
-        width: '100%', opacity: 0.9,
-        background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)',
-        border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px',
-        boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '30px'
+      width: '100%', opacity: 0.9,
+      background: 'rgba(19, 21, 31, 0.85)', backdropFilter: 'blur(12px)',
+      border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '20px',
+      boxShadow: '0 8px 32px rgba(0,0,0,0.5)', display: 'flex', flexDirection: 'column', gap: '30px'
     }}>
 
       <div style={{ fontSize: '0.9rem', color: '#ccc', fontWeight: 'bold', textTransform: 'uppercase', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
-         📍 NAVIGATION
+        📍 NAVIGATION
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -91,14 +91,14 @@ export function NavigationControl({ ros, isRoslibReady, showFootprint, setShowFo
         </div>
 
         <div style={{ display: 'flex', gap: '5px' }}>
-            <button onClick={handleOrigin} style={{ flex: 1, background: 'rgba(0, 210, 106, 0.15)', border: '1px solid #00d26a', color: '#00d26a', borderRadius: '4px', padding: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}>🏠 ORIGIN</button>
-            <button onClick={handleGlobalLoc} style={{ flex: 1, background: 'rgba(249, 217, 118, 0.15)', border: '1px solid #f9d976', color: '#f9d976', borderRadius: '4px', padding: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}>🌍 LOST</button>
+          <button onClick={handleOrigin} style={{ flex: 1, background: 'rgba(0, 210, 106, 0.15)', border: '1px solid #00d26a', color: '#00d26a', borderRadius: '4px', padding: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}>🏠 ORIGIN</button>
+          <button onClick={handleGlobalLoc} style={{ flex: 1, background: 'rgba(249, 217, 118, 0.15)', border: '1px solid #f9d976', color: '#f9d976', borderRadius: '4px', padding: '6px', cursor: 'pointer', fontSize: '0.65rem', fontWeight: 'bold' }}>🌍 LOST</button>
         </div>
 
         <div style={{ display: 'flex', gap: '5px' }}>
-          <input type="number" name="x" placeholder="X" value={poseInput.x} onChange={handleInputChange} style={{ flex:1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
-          <input type="number" name="y" placeholder="Y" value={poseInput.y} onChange={handleInputChange} style={{ flex:1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
-          <input type="number" name="yaw" placeholder="Deg" value={poseInput.yaw} onChange={handleInputChange} style={{ flex:1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
+          <input type="number" name="x" placeholder="X" value={poseInput.x} onChange={handleInputChange} style={{ flex: 1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
+          <input type="number" name="y" placeholder="Y" value={poseInput.y} onChange={handleInputChange} style={{ flex: 1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
+          <input type="number" name="yaw" placeholder="Deg" value={poseInput.yaw} onChange={handleInputChange} style={{ flex: 1, width: '100%', background: 'rgba(0,0,0,0.4)', border: '1px solid #444', color: '#fff', borderRadius: '4px', padding: '4px', textAlign: 'center', fontSize: '0.7rem' }} />
           <button onClick={handleSetPose} style={{ flex: 0.8, background: '#444', border: '1px solid #666', color: '#fff', borderRadius: '4px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 'bold' }}>SET</button>
         </div>
       </div>
@@ -111,9 +111,9 @@ export function NavigationControl({ ros, isRoslibReady, showFootprint, setShowFo
           {showFootprint ? '🟦 FOOTPRINT VISIBLE' : '⬜ FOOTPRINT HIDDEN'}
         </button>
         <div style={{ display: 'flex', gap: '5px' }}>
-            {['2D', '3D', 'FREE'].map(mode => (
-                <button key={mode} onClick={() => setViewMode(mode)} style={{ flex: 1, background: viewMode === mode ? '#00d26a' : 'rgba(255,255,255,0.05)', color: viewMode === mode ? '#000' : '#aaa', border: 'none', borderRadius: '4px', padding: '6px 0', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>{mode}</button>
-            ))}
+          {['2D', '3D', 'FREE'].map(mode => (
+            <button key={mode} onClick={() => setViewMode(mode)} style={{ flex: 1, background: viewMode === mode ? '#00d26a' : 'rgba(255,255,255,0.05)', color: viewMode === mode ? '#000' : '#aaa', border: 'none', borderRadius: '4px', padding: '6px 0', fontSize: '0.7rem', fontWeight: 'bold', cursor: 'pointer' }}>{mode}</button>
+          ))}
         </div>
       </div>
     </div>

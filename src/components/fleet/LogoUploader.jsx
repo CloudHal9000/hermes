@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function LogoUploader() {
+export default function LogoUploader() {
   const [logo, setLogo] = useState(null);
 
   useEffect(() => {
@@ -24,21 +24,21 @@ export function LogoUploader() {
   return (
     <div style={{ marginRight: '15px' }}>
       <label style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-        {}
+        { }
         <input type="file" accept="image/*" onChange={handleImageUpload} style={{ display: 'none' }} />
 
         {logo ? (
-          <img 
-            src={logo} 
-            alt="Logo Empresa" 
+          <img
+            src={logo}
+            alt="Logo Empresa"
             title="Clique para alterar a logo"
-            style={{ height: '40px', maxWidth: '120px', objectFit: 'contain' }} 
+            style={{ height: '40px', maxWidth: '120px', objectFit: 'contain' }}
           />
         ) : (
 
-          <div style={{ 
-            height: '40px', width: '40px', 
-            background: '#333', borderRadius: '50%', 
+          <div style={{
+            height: '40px', width: '40px',
+            background: '#333', borderRadius: '50%',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: '0.6rem', color: '#888', border: '1px dashed #666'
           }}>

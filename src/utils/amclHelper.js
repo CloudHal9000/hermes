@@ -1,5 +1,3 @@
-const ROSLIB = window.ROSLIB;
-
 export class AMCLHelper {
   constructor(ros) {
     if (!ros) {
@@ -27,13 +25,13 @@ export class AMCLHelper {
     const qz = Math.sin(yawRad / 2);
     const qw = Math.cos(yawRad / 2);
 
-    const topic = new ROSLIB.Topic({
+    const topic = new window.window.ROSLIB.Topic({
       ros: this.ros,
       name: '/initialpose',
       messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped'
     });
 
-    const msg = new ROSLIB.Message({
+    const msg = new window.window.ROSLIB.Message({
       header: {
         frame_id: 'map',
         stamp: { sec: 0, nanosec: 0 }
@@ -61,8 +59,8 @@ export class AMCLHelper {
     const yawRad = yaw * (Math.PI / 180);
     const qz = Math.sin(yawRad / 2);
     const qw = Math.cos(yawRad / 2);
-    const topic = new ROSLIB.Topic({ ros: this.ros, name: '/goal_pose', messageType: 'geometry_msgs/msg/PoseStamped' });
-    const msg = new ROSLIB.Message({
+    const topic = new window.window.ROSLIB.Topic({ ros: this.ros, name: '/goal_pose', messageType: 'geometry_msgs/msg/PoseStamped' });
+    const msg = new window.window.ROSLIB.Message({
       header: { frame_id: 'map', stamp: { sec: 0, nanosec: 0 } },
       pose: { position: { x: posX, y: posY, z: 0.0 }, orientation: { x: 0.0, y: 0.0, z: qz, w: qw } }
     });
@@ -73,8 +71,8 @@ export class AMCLHelper {
 
   reinitializeGlobalLocalization() {
     if (!this.ros.isConnected) { return; }
-    const service = new ROSLIB.Service({ ros: this.ros, name: '/reinitialize_global_localization', serviceType: 'std_srvs/srv/Empty' });
-    const request = new ROSLIB.ServiceRequest({});
+    const service = new window.window.ROSLIB.Service({ ros: this.ros, name: '/reinitialize_global_localization', serviceType: 'std_srvs/srv/Empty' });
+    const request = new window.window.ROSLIB.ServiceRequest({});
     console.log('🔄 Chamando serviço de Global Localization...');
     service.callService(request, (result) => console.log('✅ Resposta do serviço OK.', result), (err) => console.error('❌ Erro no serviço:', err));
   }

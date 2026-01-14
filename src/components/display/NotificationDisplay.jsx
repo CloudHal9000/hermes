@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-export function NotificationDisplay({ notifications }) {
+export default function NotificationDisplay({ notifications }) {
   const [fadingOut, setFadingOut] = useState(new Set());
 
   useEffect(() => {
