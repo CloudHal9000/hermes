@@ -1,0 +1,361 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="freebotics_description">
+
+  <!-- BASE FOOTPRINT (somente referência, sem visual/collision) -->
+  <link name="base_footprint"/>
+  <joint name="base_footprint_to_base_link" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+  </joint>
+
+  <!-- BASE_LINK (chassi) -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="0.031416 0.00034126 0.03777" rpy="0 0 0" />
+      <mass value="74.94" />
+      <inertia ixx="0.31094" ixy="-0.00020432" ixz="-0.0064285"
+               iyy="0.42877" iyz="0.00043298" izz="0.62523" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/base_link.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.42353 0.64706 0.27451 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/base_link.STL"/>
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- FRONT FORK -->
+  <link name="front_fork">
+    <inertial>
+      <origin xyz="-0.012374 -0.00085969 -0.014072" rpy="0 0 0" />
+      <mass value="0.5"/>
+      <inertia ixx="0.00049832" ixy="1.1607E-07" ixz="-4.9049E-05"
+               iyy="0.00042535" iyz="-1.4187E-08" izz="0.00056355"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_fork.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.64706 0.61961 0.58431 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_fork.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="front_fork_j" type="continuous">
+    <origin xyz="0.33029 -0.00232 -0.12324" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="front_fork"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <!-- FRONT WHEEL -->
+  <link name="front_wheel">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.36"/>
+      <inertia ixx="0.0002479" ixy="2.3292E-15" ixz="-7.9385E-21"
+               iyy="0.00041439" iyz="7.6637E-20" izz="0.0002479"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_wheel.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_wheel.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="front_wheel_j" type="continuous">
+    <origin xyz="-0.044955 0 -0.059863" rpy="0 0 0"/>
+    <parent link="front_fork"/>
+    <child link="front_wheel"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <!-- REAR WHEELS -->
+  <link name="rear_wheel_left">
+    <inertial>
+      <origin xyz="5.2322E-10 0.0014486 6.9661E-06" rpy="0 0 0"/>
+      <mass value="2.5"/>
+      <inertia ixx="0.0080485" ixy="-7.0676E-11" ixz="1.4677E-09"
+               iyy="0.014242" iyz="2.0518E-06" izz="0.0080487"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_wheel_left.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.81176 0.85882 0.89804 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_wheel_left.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rear_wheel_left_j" type="continuous">
+    <origin xyz="-0.16466 0.15852 -0.15604" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="rear_wheel_left"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <link name="rear_wheel_right">
+    <inertial>
+      <origin xyz="-5.2322E-10 -0.0014486 6.9661E-06" rpy="0 0 0"/>
+      <mass value="2.5"/>
+      <inertia ixx="0.0080485" ixy="-7.0676E-11" ixz="-1.4677E-09"
+               iyy="0.014242" iyz="-2.0518E-06" izz="0.0080487"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_wheel_right.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.81176 0.85882 0.89804 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_wheel_right.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rear_wheel_right_j" type="continuous">
+    <origin xyz="-0.16466 -0.16316 -0.15604" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="rear_wheel_right"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <!-- SENSORES LIDAR -->
+  <link name="front_rp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.20467"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0"
+               iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_rp.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_rp.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="front_rp_j" type="continuous">
+    <origin xyz="0.4309 0.18984 -0.13809" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="front_rp"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <link name="front_lidar_link"/>
+  <joint name="front_lidar_joint" type="fixed">
+    <origin xyz="0 0 -0.02010462941" rpy="3.1415 0 0"/>
+    <parent link="front_rp"/>
+    <child link="front_lidar_link"/>
+  </joint>
+
+  <link name="rear_rp">
+    <inertial>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <mass value="0.20467"/>
+      <inertia ixx="0.0001" ixy="0.0" ixz="0.0"
+               iyy="0.0001" iyz="0.0" izz="0.0001"/>
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_rp.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="1 1 1 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/rear_rp.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="rear_rp_j" type="continuous">
+    <origin xyz="-0.32355 -0.19856 -0.13824" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="rear_rp"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="5" velocity="5"/>
+    <dynamics damping="0.1" friction="0.1"/>
+  </joint>
+
+  <link name="rear_lidar_link"/>
+  <joint name="rear_lidar_joint" type="fixed">
+    <origin xyz="0 0 -0.02010462941" rpy="3.1415 0 0"/>
+    <parent link="rear_rp"/>
+    <child link="rear_lidar_link"/>
+  </joint>
+
+  <!-- ==================== CÂMERAS (com links intermediários) ==================== -->
+
+  <!-- FRONT CAMERA MOUNT -->
+  <link name="front_camera_mount"/>
+  <joint name="front_camera_mount_joint" type="fixed">
+    <origin xyz="0.38059 -0.0020788 0.23668" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="front_camera_mount"/>
+  </joint>
+  <!-- FRONT CAMERA -->
+  <link name="front_camera">
+    <inertial>
+      <origin xyz="0.0071114 -0.00224384 0.008686" rpy="0 0 0" />
+      <mass value="0.2" />
+      <inertia ixx="0.00023447" ixy="4.2864E-06" ixz="2.2467E-06"
+               iyy="0.00011007" iyz="7.0982E-08" izz="0.00029142" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_camera.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.64706 0.61961 0.58824 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/front_camera.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="front_camera_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="front_camera_mount"/>
+    <child link="front_camera"/>
+  </joint>
+
+  <!-- LEFT CAMERA MOUNT -->
+  <link name="camera_le_mount"/>
+  <joint name="camera_le_mount_joint" type="fixed">
+    <origin xyz="0.0089734 0.18361 0.23628" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_le_mount"/>
+  </joint>
+  <!-- LEFT CAMERA -->
+  <link name="camera_le">
+    <inertial>
+      <origin xyz="-0.00024384 0.0071114 0.008686" rpy="0 0 0" />
+      <mass value="0.2" />
+      <inertia ixx="0.00011007" ixy="-4.2864E-06" ixz="-7.0982E-08"
+               iyy="0.00023447" iyz="2.2467E-06" izz="0.00029142" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/camera_le.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.64706 0.61961 0.58824 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/camera_le.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="camera_le_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="camera_le_mount"/>
+    <child link="camera_le"/>
+  </joint>
+
+  <!-- RIGHT CAMERA MOUNT -->
+  <link name="camera_ld_mount"/>
+  <joint name="camera_ld_mount_joint" type="fixed">
+    <origin xyz="0.0089734 -0.18825 0.23628" rpy="0 0 0"/>
+    <parent link="base_link"/>
+    <child link="camera_ld_mount"/>
+  </joint>
+  <!-- RIGHT CAMERA -->
+  <link name="camera_ld">
+    <inertial>
+      <origin xyz="-0.0002466 -0.0071113 0.008686" rpy="0 0 0" />
+      <mass value="0.2" />
+      <inertia ixx="0.00011007" ixy="4.303E-06" ixz="-8.3951E-08"
+               iyy="0.00023446" iyz="-2.2463E-06" izz="0.00029142" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/camera_ld.STL"/>
+      </geometry>
+      <material name="">
+        <color rgba="0.64706 0.61961 0.58824 1"/>
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <mesh filename="package://freebotics_description/meshes/camera_ld.STL"/>
+      </geometry>
+    </collision>
+  </link>
+  <joint name="camera_ld_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="camera_ld_mount"/>
+    <child link="camera_ld"/>
+  </joint>
+
+</robot>
+
