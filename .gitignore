@@ -25,3 +25,13 @@ dist-ssr
 node_modules/
 .env
 dist/
+
+dev-debug.log
+# Dependency directories
+# Environment variables
+.vscode
+# OS specific
+
+# Task files
+# tasks.json
+# tasks/ 

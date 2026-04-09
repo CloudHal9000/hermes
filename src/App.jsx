@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, lazy, Suspense } from 'react
 import { useRos } from './hooks/useRos';
 import { useFleetPolling } from './hooks/useFleetPolling';
 import { NotificationProvider, useNotification } from './context/NotificationContext';
+import ErrorBoundary from './components/common/ErrorBoundary';
 
 const Joystick = lazy(() => import('./components/controls/Joystick'));
 const DashboardPanel = lazy(() => import('./components/display/DashboardPanel'));
@@ -138,7 +139,9 @@ function AppContent() {
     <div style={{ position: 'relative', opacity: 0.8, height: '100vh', width: '100vw', background: '#000', overflow: 'hidden', color: '#eee', fontFamily: 'system-ui, sans-serif' }}>
       <Suspense fallback={<div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff' }}>Carregando Mapa...</div>}>
         <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-          <Map3D ros={ros} showFootprint={showFootprint} viewMode={viewMode} activeTool={activeTool} setActiveTool={setActiveTool} />
+          <ErrorBoundary>
+            <Map3D ros={ros} showFootprint={showFootprint} viewMode={viewMode} activeTool={activeTool} setActiveTool={setActiveTool} />
+          </ErrorBoundary>
         </div>
       </Suspense>
 
