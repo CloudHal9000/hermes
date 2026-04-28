@@ -1,0 +1,8 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "strict": false,
+    "baseUrl": ".",
+    "paths": { "@types/*": ["src/types/*"] }
+  }
+}
