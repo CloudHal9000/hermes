@@ -34,5 +34,9 @@ dev-debug.log
 
 # Task files
 # tasks.json
-# tasks/ 
+# tasks/
 __pycache__/
+
+# Electron build output
+dist-electron/
+release/

@@ -1,0 +1,46 @@
+# electron-builder.yml — Configuration for building .deb and .AppImage packages
+
+appId: "br.com.needtech.hermes"
+productName: "Hermes"
+copyright: "Copyright © 2026 NeedTech"
+
+directories:
+  output: release
+  buildResources: build-resources
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - node_modules/**/*
+  - package.json
+  - package-lock.json
+
+# === Linux-specific build configuration ===
+linux:
+  target:
+    - target: deb
+      arch: [x64]
+    - target: AppImage
+      arch: [x64]
+  category: "Utility"
+  description: "Hermes Fleet Dashboard — open-RMF robot fleet management"
+  maintainer: "NeedTech <dev@needtech.com.br>"
+  vendor: "NeedTech"
+  icon: "build-resources/icon.png"
+
+# === .deb (Debian/Ubuntu) package ===
+deb:
+  depends:
+    - libgtk-3-0
+    - libnotify4
+    - libnss3
+    - libxss1
+    - libxtst6
+    - xdg-utils
+    - libatspi2.0-0
+    - libuuid1
+
+# === .AppImage (Universal Linux) package ===
+appImage:
+  # The AppImage will run on any Linux distro with GLIBC >= 2.29
+  category: "Utility"

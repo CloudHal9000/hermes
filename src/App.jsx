@@ -8,6 +8,7 @@ import { useRMFApi }    from './hooks/useRMFApi';
 import { useFleetState } from './hooks/useFleetState';
 import { NotificationProvider, useNotification } from './context/NotificationContext';
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { initRMFUrls } from './lib/rmfClient';
 
 const Joystick           = lazy(() => import('./components/controls/Joystick'));
 const DashboardPanel     = lazy(() => import('./components/display/DashboardPanel'));
@@ -17,6 +18,7 @@ const LogoUploader       = lazy(() => import('./components/fleet/LogoUploader'))
 const FleetSelector      = lazy(() => import('./components/fleet/FleetSelector'));
 const NotificationDisplay = lazy(() => import('./components/display/NotificationDisplay'));
 const TaskManager        = lazy(() => import('./components/tasks/TaskManager'));
+const ConnectionSettings  = lazy(() => import('./components/settings/ConnectionSettings'));
 
 // ── Connection status dot ────────────────────────────────────────────────────
 const STATUS_DOT = {
@@ -126,19 +128,47 @@ SidebarRight.propTypes = {
 };
 
 // ── TopHeader ─────────────────────────────────────────────────────────────────
-function TopHeader({ connectionStatus }) {
+function TopHeader({ connectionStatus, onSettingsClick }) {
   return (
-    <div style={{ position: 'absolute', top: 0, left: 0, width: '320px', height: '60px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none' }}>
+    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '60px', zIndex: 20, display: 'flex', alignItems: 'center', padding: '0 20px', pointerEvents: 'none', justifyContent: 'space-between' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', pointerEvents: 'auto' }}>
         <LogoUploader />
         <h1 style={{ margin: 0, fontSize: '1.3rem', letterSpacing: '2px', fontWeight: '800', color: 'rgba(255,255,255,0.9)', textShadow: '0 2px 10px rgba(0,0,0,0.8)' }}>HERMES</h1>
         <ConnectionDot status={connectionStatus} />
       </div>
+      <button
+        onClick={onSettingsClick}
+        style={{
+          pointerEvents: 'auto',
+          background: 'rgba(255, 255, 255, 0.1)',
+          border: '1px solid rgba(255, 255, 255, 0.2)',
+          borderRadius: '6px',
+          padding: '6px 10px',
+          cursor: 'pointer',
+          color: 'rgba(255, 255, 255, 0.7)',
+          fontSize: '18px',
+          transition: 'all 0.2s ease',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+        onMouseEnter={e => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.15)';
+          e.target.style.color = 'rgba(255, 255, 255, 0.9)';
+        }}
+        onMouseLeave={e => {
+          e.target.style.background = 'rgba(255, 255, 255, 0.1)';
+          e.target.style.color = 'rgba(255, 255, 255, 0.7)';
+        }}
+        title="Connection Settings"
+      >
+        ⚙️
+      </button>
     </div>
   );
 }
 
-TopHeader.propTypes = { connectionStatus: PropTypes.string };
+TopHeader.propTypes = { connectionStatus: PropTypes.string, onSettingsClick: PropTypes.func };
 
 // ── AppContent — main layout ──────────────────────────────────────────────────
 function AppContent() {
@@ -153,11 +183,12 @@ function AppContent() {
   const robotIp = import.meta.env.VITE_ROBOT_IP ?? 'localhost';
   const { ros } = useRos(isRoslibReady ? robotIp : null);
 
-  const [activeRobotId, setActiveRobotId]   = useState(null);
-  const [showFootprint, setShowFootprint]   = useState(true);
-  const [viewMode, setViewMode]             = useState('FREE');
-  const [activeTool, setActiveTool]         = useState(null);
+  const [activeRobotId, setActiveRobotId]     = useState(null);
+  const [showFootprint, setShowFootprint]     = useState(true);
+  const [viewMode, setViewMode]               = useState('FREE');
+  const [activeTool, setActiveTool]           = useState(null);
   const [initialPoseSent, setInitialPoseSent] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   // Auto-select first robot when fleet populates
   useEffect(() => {
@@ -196,7 +227,8 @@ function AppContent() {
 
       <Suspense fallback={null}>
         <DashboardPanel ros={ros} robotName={activeRobot?.id} robot={activeRobot} />
-        <TopHeader connectionStatus={connectionStatus} />
+        <TopHeader connectionStatus={connectionStatus} onSettingsClick={() => setShowSettingsModal(true)} />
+        <ConnectionSettings isOpen={showSettingsModal} onClose={() => setShowSettingsModal(false)} />
         <SidebarLeft robots={robots} activeRobotId={activeRobotId} onSelectRobot={setActiveRobotId} connectionStatus={connectionStatus} />
         <SidebarRight
           ros={ros}
@@ -217,6 +249,11 @@ function AppContent() {
 // ── Root App ──────────────────────────────────────────────────────────────────
 function App() {
   const [notifications, setNotifications] = useState([]);
+
+  // Initialize RMF URLs from Electron settings (if running in Electron)
+  useEffect(() => {
+    initRMFUrls().catch(error => console.error('[App] Failed to init RMF URLs:', error));
+  }, []);
 
   return (
     <NotificationProvider onNotification={setNotifications}>

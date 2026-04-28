@@ -11,9 +11,44 @@
  * See docs/auth-spec.md for security considerations and roadmap.
  */
 
-const RMF_BASE_URL = import.meta.env.VITE_RMF_API_URL ?? 'http://localhost:8000';
-const RMF_WS_URL   = import.meta.env.VITE_RMF_WS_URL  ?? 'ws://localhost:8000';
-const RMF_TOKEN    = import.meta.env.VITE_RMF_TOKEN    ?? '';
+// Cache for dynamically fetched URLs (Electron mode)
+let cachedUrls = null;
+let urlsFetchInProgress = false;
+
+// Default URLs (env vars or hardcoded fallback)
+const DEFAULT_RMF_BASE_URL = import.meta.env.VITE_RMF_API_URL ?? 'http://localhost:7878';
+const DEFAULT_RMF_WS_URL   = import.meta.env.VITE_RMF_WS_URL  ?? 'ws://localhost:7878';
+const RMF_TOKEN            = import.meta.env.VITE_RMF_TOKEN    ?? '';
+
+// Synchronous getter for RMF base URL (uses cache to avoid async overhead)
+function getRMFBaseUrlSync() {
+  if (cachedUrls) return cachedUrls.rmfApiUrl;
+  return DEFAULT_RMF_BASE_URL;
+}
+
+// Synchronous getter for RMF WebSocket URL
+function getRMFWsUrlSync() {
+  if (cachedUrls) return cachedUrls.rosbridgeUrl;
+  return DEFAULT_RMF_WS_URL;
+}
+
+// Async function to fetch URLs from electronSettings (called once on app init)
+export async function initRMFUrls() {
+  if (urlsFetchInProgress) return;
+  urlsFetchInProgress = true;
+
+  try {
+    if (window.electronAPI?.getSettings) {
+      const settings = await window.electronAPI.getSettings();
+      cachedUrls = settings;
+      console.info('[rmfClient] Loaded dynamic RMF URLs from Electron store');
+    }
+  } catch (error) {
+    console.warn('[rmfClient] Failed to load dynamic URLs:', error);
+  }
+
+  urlsFetchInProgress = false;
+}
 
 // Warn at startup — visible in browser console, not in production builds
 // when the variable is empty (a misconfigured env is caught early).
@@ -65,7 +100,8 @@ function emitAuthError(status, path) {
  * @returns {Promise<Response>}
  */
 export async function rmfFetch(path, options = {}) {
-  const url = `${RMF_BASE_URL}${path}`;
+  const baseUrl = getRMFBaseUrlSync();
+  const url = `${baseUrl}${path}`;
 
   const mergedOptions = {
     ...options,
@@ -104,8 +140,9 @@ export async function rmfFetch(path, options = {}) {
  * @returns {WebSocket}
  */
 export function rmfWebSocket(path) {
+  const wsUrl = getRMFWsUrlSync();
   const tokenParam = RMF_TOKEN ? `?token=${encodeURIComponent(RMF_TOKEN)}` : '';
-  const url = `${RMF_WS_URL}${path}${tokenParam}`;
+  const url = `${wsUrl}${path}${tokenParam}`;
 
   const ws = new WebSocket(url);
 

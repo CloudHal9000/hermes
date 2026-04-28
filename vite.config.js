@@ -1,7 +1,11 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
+// eslint-disable-next-line no-undef
+const isElectron = process.env?.ELECTRON === 'true';
+
 export default defineConfig({
+  base: isElectron ? './' : '/',
   plugins: [react()],
   optimizeDeps: {
     include: ['roslib'],
