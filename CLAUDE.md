@@ -4,191 +4,163 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Freebotics Studio Dashboard is a React-based web interface for controlling and monitoring robots. It uses ROS (Robot Operating System) communication via roslib and Three.js for 3D visualization of the robot environment and URDF models.
+Hermes is a React-based fleet management dashboard for controlling and monitoring multi-robot systems via **open-RMF**. It uses the RMF API Server for fleet state and task dispatch, rosbridge WebSocket for sensor data (costmaps, LiDAR), and Three.js for 3D visualization of robots, maps and navigation.
 
 ## Development Setup
 
 ### Common Commands
 
-- **Start development server**: `npm run dev` - Runs Vite dev server with hot module reload
-- **Build for production**: `npm run build` - Creates optimized build in `dist/`
-- **Lint code**: `npm run lint` - Runs ESLint on all JS/JSX files
-- **Preview production build locally**: `npm run preview` - Serves the production build locally
+- **Start development server**: `npm run dev` — Vite dev server with HMR
+- **Build for production**: `npm run build` — optimised bundle in `dist/`
+- **Lint**: `npm run lint`
+- **Tests**: `npm run test:run` — 32+ tests, Vitest + jsdom
+- **Backend check**: `bash scripts/setup-ros2-rmf.sh` — verify ROS 2 / RMF prerequisites
 
-### Build & Deployment
+### Backend Launch (ROS 2)
 
-The application is built with Vite and includes special configuration for:
-- **roslib dependency**: Listed in `optimizeDeps.include` due to CommonJS compatibility
-- **API proxy**: Development server proxies `/api/*` requests to `http://localhost:8000` (configured in vite.config.js)
-- **Environment variables**: API URL is set via `VITE_API_URL` and defaults to `http://localhost:8000`
+```bash
+export RMF_JWT_SECRET=hermes-dev-secret
+ros2 launch ros2/launch/hermes_backend.launch.py
+# or:
+docker compose -f docker/docker-compose.yml up
+```
 
-## Architecture
+### Validation Scripts
 
-### Core Dependencies
+| Script | Purpose |
+|---|---|
+| `bash scripts/validate-week1.sh` | ROS 2 + adapter compiled |
+| `bash scripts/validate-week2.sh --with-backend` | RMF API Server + rosbridge live |
+| `bash scripts/validate-week3.sh` | Hooks + TaskManager UI |
+| `bash scripts/validate-week4.sh` | Full integration |
 
-- **React 18.3**: UI framework with lazy loading and Suspense for component splitting
-- **Three.js**: 3D graphics for map and robot visualization
-- **roslib 2.0.1**: ROS WebSocket communication (loaded via CDN in index.html, accessed via `window.ROSLIB`)
-- **urdf-loader**: Loads and renders URDF robot models in Three.js
-- **react-router-dom**: Routing (imported but minimal usage in current codebase)
-- **nipplejs**: Virtual joystick component
-- **react-gauge-component**: Gauge displays for robot metrics
+### Environment Variables
 
-### Application Structure
+| Variable | Default | Notes |
+|---|---|---|
+| `VITE_RMF_API_URL` | `http://localhost:8000` | RMF API Server (8000 = Docker, 7878 = native) |
+| `VITE_RMF_WS_URL` | `ws://localhost:8000` | WebSocket URL |
+| `VITE_RMF_TOKEN` | — | JWT Bearer token — see `docs/infrastructure-requirements.md#jwt` |
+| `VITE_ROBOT_IP` | `localhost` | Robot IP for rosbridge legacy connection |
 
-The application is organized into several key areas:
+## Architecture — open-RMF (Current)
 
-#### Context & State Management
+Data flows from robot through RMF stack to the dashboard:
 
-- **NotificationContext** (`src/context/NotificationContext.jsx`): Global notification system using React Context. Provides `addNotification()` hook for showing toast messages throughout the app. Messages auto-dismiss after 4 seconds by default.
+```
+Robot → /tf /battery_state (ROS 2)
+        ↓
+freebotics_rmf_adapter  →  rmf_fleet_msgs/FleetState (10 Hz)
+        ↓
+RMF API Server :7878    →  REST + WebSocket (fleet_states, tasks)
+        ↓
+useRMFApi               →  validates events, syncs fleetStore (Zustand)
+        ↓
+useFleetState / useRMFPoses  →  expose data to components
+        ↓
+Map3D + TaskManager     →  render fleet state, submit tasks
+```
 
-#### Custom Hooks
+**Sensor data** (costmaps, LiDAR) still flows via rosbridge (:9090) — deprecated in Phase 4.
 
-- **useRos** (`src/hooks/useRos.js`): Manages ROS WebSocket connection. Takes `robotIp` and establishes connection to `ws://{robotIp}:9090`. Returns `{ ros, isConnected }`. Handles connection/error/close events.
-- **useFleetPolling** (`src/hooks/useFleetPolling.js`): Polls the backend API (`/api/robots`) every 5 seconds to fetch robot list. Maps robot data and tracks online status, battery level, mode, etc. Returns array of robot objects.
-- **useExternalScript** (`src/hooks/useExternalScript.js`): Utility for dynamically loading external scripts.
+## Application Structure
 
-#### Main Components
+### State Management
 
-- **App** (`src/App.jsx`): Root component. Contains NotificationProvider and AppContent.
-  - **AppContent**: Main dashboard layout with:
-    - **TopHeader**: Logo uploader and "FREEBOTICS STUDIO" title
-    - **SidebarLeft**: Fleet selector (choose active robot)
-    - **SidebarRight**: NAV2 control buttons (set goal, set pose, stop robot) and navigation options
-    - **Map3D**: Full-screen 3D visualization (lazy loaded)
-    - **Joystick**: Virtual joystick for manual control
-    - **DashboardPanel**: Robot status information
-    - **NotificationDisplay**: Toast notifications
+- **fleetStore** (`src/store/fleetStore.ts`): Central Zustand store. Holds `robots[]`, `tasks[]`, `connectionStatus`. Populated by `useRMFApi`. Works outside React tree via `.getState()`.
+- **NotificationContext** (`src/context/NotificationContext.jsx`): Toast notifications. `addNotification(message, duration?)`.
 
-#### Navigation & Visualization
+### Custom Hooks
 
-- **Map3D** (`src/components/navigation/Map3D.jsx`): Core 3D visualization component using Three.js, OrbitControls, and URDF loader. Renders:
-  - Robot model (URDF-based)
-  - Costmaps (local and global)
-  - Robot footprint
-  - Navigation path
-  - Goal and pose markers (interactive with mouse clicks)
-  - Coordinate frames from TF tree
-  - AMCL particle cloud for localization
+| Hook | Path | Purpose |
+|---|---|---|
+| `useRMFApi` | `src/hooks/useRMFApi.js` | WebSocket to `/fleet_states` with exponential backoff reconnect; REST helpers (createTask, cancelTask, getTask) |
+| `useFleetState` | `src/hooks/useFleetState.js` | Selects robots/tasks from fleetStore; transforms to UI format |
+| `useRMFPoses` | `src/components/navigation/map-layers/useRMFPoses.js` | Converts robots[] to Three.js `{position, quaternion}` map |
+| `useRos` | `src/hooks/useRos.js` | **LEGACY** — rosbridge connection for sensor data; kept until Phase 4 |
+| `useFleetPolling` | `src/hooks/useFleetPolling.js` | **LEGACY** — replaced by useRMFApi + useFleetState |
 
-  Uses modular hook architecture:
-  - **useMapScene**: Basic Three.js setup (renderer, camera, controls)
-  - **useTfGraph**: ROS transform management
-  - **useRobotModel**: URDF model and footprint rendering
-  - **useCostmapLayer**: Costmap visualization
-  - **usePathLayer**: Navigation path rendering
-  - **useNavigationTool**: Interactive goal/pose placement
+### Main Components
 
-  Subscribes to ROS topics:
-  - `/robot/mode_str`: Robot mode (autonomous/manual)
-  - `/ui/navigate_to_pose`: Goal positions
-  - `/initialpose`: Robot initial pose
-  - Various visualization and localization topics
+- **App** (`src/App.jsx`): Root. `useRMFApi()` starts WebSocket on mount. `useRos()` kept for rosbridge sensors.
+- **Map3D** (`src/components/navigation/Map3D.jsx`): Three.js scene. Uses `useMultiRobotModel` + `useRMFPoses` for N robots. `ros` prop used only by `useCostmapLayer` and `useLidarLayer`.
+- **TaskManager** (`src/components/tasks/TaskManager.jsx`): Task submission form + live task list. Consumes `useFleetState` internally.
+- **FleetSelector** (`src/components/fleet/FleetSelector.jsx`): Auto-detects RMF mode (robots have `.fleet` field) vs legacy mode (robots have `.ip` field).
 
-- **NavigationControl** (`src/components/navigation/NavigationControl.jsx`): Right sidebar controls for visualization options (show footprint, view mode, etc.)
+### Map3D Layers
 
-#### Utilities
+| Hook | Data source | Notes |
+|---|---|---|
+| `useMapScene` | — | WebGLRenderer, camera, OrbitControls |
+| `useMultiRobotModel` | fleetStore robots[] + rmfPoses | N URDF groups; replaces `useRobotModel` |
+| `useRMFPoses` | fleetStore robots[] | yaw→quaternion; replaces `useTfGraph` |
+| `useCostmapLayer` | rosbridge `/local_costmap/costmap` | DataTexture reused per frame (PERF QW1) |
+| `useLidarLayer` | rosbridge `/lidar/front_aligned` | tfGraph removed; group positioned by RMF |
+| `usePathLayer` | rosbridge `/path` | Navigation path viz |
+| `useNavigationTool` | Three.js raycasting + createTask() | GOAL → POST /tasks; POSE → /initialpose via rosbridge |
 
-- **SimpleTfGraph** (`src/utils/SimpleTfGraph.js`): Manages ROS TF (transform) tree subscription and updates. Converts TF frame data to Three.js transforms for rendering robot skeleton.
-- **AMCLHelper** (`src/utils/amclHelper.js`): Handles AMCL (Adaptive Monte Carlo Localization) particle visualization. Manages particle cloud subscription and rendering.
-- **amclHelper** export: Utility class for managing AMCL particle subscriptions
+### Data Flow (post-MVP)
 
-#### Other Components
-
-- **FleetSelector** (`src/components/fleet/FleetSelector.jsx`): Dropdown to select active robot
-- **LogoUploader** (`src/components/fleet/LogoUploader.jsx`): UI for uploading/displaying robot logo
-- **Joystick** (`src/components/controls/Joystick.jsx`): Virtual joystick interface for manual robot control
-- **DashboardPanel** (`src/components/display/DashboardPanel.jsx`): Displays robot status (battery, mode, etc.)
-- **NotificationDisplay** (`src/components/display/NotificationDisplay.jsx`): Renders toast notifications
-
-### Data Flow
-
-1. **Fleet Loading**: `useFleetPolling` polls `/api/robots` every 5 seconds
-2. **Robot Selection**: User selects robot in FleetSelector → activeRobotId changes
-3. **ROS Connection**: `useRos` hook connects to selected robot's WebSocket server
-4. **Visualization**: Map3D subscribes to ROS topics (TF, costmaps, AMCL, etc.) and renders 3D scene
-5. **User Interaction**: Nav2 goal/pose commands sent to `/ui/navigate_to_pose` topic, joystick commands to `/cmd_vel`
-6. **Notifications**: Operations trigger notifications via NotificationContext
-
-### ROS Integration
-
-The application communicates with ROS via WebSocket using roslib library (loaded from CDN). Key connection details:
-- **WebSocket URL**: `ws://{robot_ip}:9090`
-- **roslib** is accessed via `window.ROSLIB` global variable
-- Published topics: `/cmd_vel`, `/initialpose`, `/ui/navigate_to_pose`
-- Subscribed topics: Various transform frames, costmaps, AMCL particles, robot status
+1. `useRMFApi` connects WebSocket → validates `isRMFWebSocketEvent` + `isFleetState` → `fleetStore.setFleetState()`
+2. `useFleetState` selects from store → `robotList` with UI-friendly fields
+3. `useRMFPoses` converts `robots[].location` to Three.js poses
+4. `useMultiRobotModel` syncs Three.js Groups with rmfPoses in animation loop
+5. `useNavigationTool` raycasts on pointer drag → `createTask({ category: 'navigation', goal: {x,y,yaw} })`
+6. `TaskManager` shows task list from store; cancel via `cancelTask(id)`
+7. Sensor data (costmaps, LiDAR) still reaches Map3D via rosbridge `:9090`
 
 ## Testing
 
-No test framework is currently configured. The project focuses on:
-- Manual testing with Vite dev server (`npm run dev`)
-- Linting for code quality (`npm run lint`)
-- Build validation (`npm run build`)
+```bash
+npm run test:run  # 32+ tests, <3s
+```
 
-## Key Technical Considerations
+Suites:
+- `src/store/__tests__/fleetStore.test.ts` — Zustand store actions
+- `src/types/__tests__/guards.test.ts` — isFleetState, isTaskState, isRMFWebSocketEvent
+- `src/hooks/__tests__/useRMFApi.test.js` — WebSocket lifecycle, backoff reconnect, REST
+- `src/hooks/__tests__/useFleetState.test.js` — robot normalisation, dual-format support
 
-### Three.js Scene Management
-The Map3D component uses Three.js with:
-- **WebGLRenderer**: Renders to the mount div
-- **PerspectiveCamera**: 3D camera with orbit controls
-- **GridHelper**: Floor grid for reference
-- **URDF models**: Robot representation loaded via urdf-loader
-- **Raycasting**: Mouse picking for interactive goal/pose placement
+Mocking pattern: `vi.mock('../../lib/rmfClient')` + `rmfWebSocket.mockReturnValue(mockWs)` in `beforeEach`.
 
-### Performance
-- Components use lazy loading with React.lazy() and Suspense for code splitting
-- Robot polling (5s interval) uses ref to track if API notification already shown
-- Document visibility check prevents polling when tab is hidden
-- Scene updates batched with requestAnimationFrame in Map3D
-- Error boundaries wrap Map3D and other critical components
+## Key Technical Rules
 
-### styling
-All styling is done inline with React style objects. No CSS files except `src/index.css`. Dark theme with glassmorphism effects (backdrop blur, semi-transparent backgrounds).
+### Never do this
 
-## ESLint Configuration
+- `fetch()` or `new WebSocket()` directly in hooks — use `rmfFetch()` / `rmfWebSocket()` from `src/lib/rmfClient.js`
+- CSS modules or Tailwind — all styles via inline JS objects
+- `<form>` tag — use div + onClick (project convention)
+- Hardcode `RMF_JWT_SECRET` in any file — env var only
 
-Rules follow React 18.3 best practices:
-- React hooks rules enforced
-- JSX runtime rules enabled (no React import needed)
-- React Refresh integration for fast refresh
-- `jsx-no-target-blank` disabled
+### Always do this
 
-Run `npm run lint` to check for violations.
+- New files: `.ts` / `.tsx` (TypeScript, Phases 1+)
+- Existing `.js` files: migrate only when editing for another reason
+- Store updates from outside React: `useFleetStore.getState().setXxx()`
+- Add `// LEGACY: remove Phase 4` comments when keeping deprecated rosbridge code
 
-## Architecture Migration: open-RMF + VDA5050
+## Styling
 
-**⚠️ Important**: This project is scheduled for a major architecture migration. **Read [OPENRMF_MIGRATION.md](./OPENRMF_MIGRATION.md) before starting any significant development work.**
+Dark glassmorphism theme. All styles inline with JS objects:
 
-### Current Status
+```jsx
+style={{ background: 'rgba(15,17,26,0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}
+```
 
-- **Stack**: ROS 1/2 with roslib WebSocket (single robot)
-- **Limitation**: No multi-robot coordination, no interoperability with other manufacturers
+## ESLint
 
-### Migration Goal
+```bash
+npm run lint  # pre-existing errors only in public/lib/roslib.js (vendored)
+```
 
-- **Target**: open-RMF fleet manager with VDA5050 interoperability
-- **Timeline**: MVP in 4 weeks (Phases 1-3), VDA5050 in Sprint 2 (Phase 4)
-- **Impact**: Significant refactoring of hooks, API integration, and state management
+## Backend Overview
 
-### Key Changes (Planned)
+See `docs/infrastructure-requirements.md` for full setup. Quick reference:
 
-1. **useRos** → **useRMFApi** (REST + WebSocket to RMF API Server :7878)
-2. **useFleetPolling** → **useFleetState** (event-driven Fleet State)
-3. **useTfGraph** → **useRMFPoses** (centralized pose from RMF)
-4. **Fleet Adapter** (new backend): Translates ROS 2 ↔ open-RMF ↔ VDA5050
-5. **TaskManager** (new UI): Multi-task submission and tracking
+| Service | Port | Start |
+|---|---|---|
+| RMF API Server | 8000 (Docker) / 7878 (native) | `docker compose up` or ROS 2 launch |
+| rosbridge | 9090 | Included in `hermes_backend.launch.py` |
+| freebotics_rmf_adapter | — | ROS 2 node, auto-started by launch |
 
-### When to Use Current vs New Architecture
-
-- **Current** (ROS single-robot): Development until Phase 1 complete
-- **New** (open-RMF multi-robot): Development from Semana 2 onwards
-- **Parallel**: rosbridge continues for sensor data (costmaps, LiDAR) during Phases 1-3, deprecated in Phase 4
-
-### Files to Watch for Changes
-
-- `src/hooks/useRos.js` - Will be wrapped by `useRosVisuals` → deprecated
-- `src/hooks/useFleetPolling.js` - Will be replaced by `useFleetState`
-- `src/components/navigation/Map3D.jsx` - Multi-robot refactoring
-- `src/utils/SimpleTfGraph.js` - Will be replaced by `useRMFPoses`
-
-See **[OPENRMF_MIGRATION.md](./OPENRMF_MIGRATION.md)** for complete details, timeline, and implementation guide.
+See `OPENRMF_MIGRATION.md` for the full 4-week migration plan and Phase 4 (VDA5050) roadmap.

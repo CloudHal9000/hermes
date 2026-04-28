@@ -1,12 +1,9 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
-import { SimpleTfGraph } from '../../../utils/SimpleTfGraph';
 
-export function useLidarLayer(ros, parentGroup, tfGraph) {
+export function useLidarLayer(ros, parentGroup) {
     const frontPointsRef = useRef(null);
     const rearPointsRef = useRef(null);
-
-    const BASE_FRAME = 'base_footprint';
 
     useEffect(() => {
         if (!ros || !parentGroup) return;
@@ -23,9 +20,8 @@ export function useLidarLayer(ros, parentGroup, tfGraph) {
         parentGroup.add(rearPoints);
         rearPointsRef.current = rearPoints;
 
-        // Helper function
+        // Helper function — robot group is already positioned by RMF poses
         const updateLidar = (msg, geo) => {
-            if (!tfGraph) return;
 
             const pts = [];
             let ang = msg.angle_min;
@@ -57,5 +53,5 @@ export function useLidarLayer(ros, parentGroup, tfGraph) {
             frontGeo.dispose();
             rearGeo.dispose();
         };
-    }, [ros, parentGroup, tfGraph]);
+    }, [ros, parentGroup]);
 }

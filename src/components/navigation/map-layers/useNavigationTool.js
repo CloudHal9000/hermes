@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as THREE from 'three';
+import { useFleetState } from '../../../hooks/useFleetState';
 
 export function useNavigationTool(ros, scene, camera, floorPlane, activeTool, setActiveTool) {
     const goalMarkerRef = useRef(null);
@@ -10,7 +11,9 @@ export function useNavigationTool(ros, scene, camera, floorPlane, activeTool, se
     const mouseRef = useRef(new THREE.Vector2());
     const currentYawRef = useRef(0);
 
-    const TOPIC_GOAL = '/ui/navigate_to_pose';
+    // GOAL now dispatched via RMF API instead of roslib topic
+    const { createTask } = useFleetState();
+
     const TOPIC_INIT = '/initialpose';
 
     useEffect(() => {
@@ -106,21 +109,25 @@ export function useNavigationTool(ros, scene, camera, floorPlane, activeTool, se
         const rotation = currentYawRef.current;
         const orientation = getQuaternionFromYaw(rotation);
 
-        const stamp = { sec: 0, nanosec: 0 };
-        const goalTopic = new window.ROSLIB.Topic({ ros, name: TOPIC_GOAL, messageType: 'geometry_msgs/msg/PoseStamped' });
-        const initTopic = new window.ROSLIB.Topic({ ros, name: TOPIC_INIT, messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped' });
-
         if (activeTool === 'GOAL') {
-            goalTopic.publish({
-                header: { frame_id: 'map', stamp: stamp },
-                pose: { position: { x: pos.x, y: pos.y, z: 0 }, orientation: orientation }
-            });
+            // Dispatch navigation task via RMF API (replaces roslib topic publish)
+            createTask({
+                category: 'navigation',
+                start: { x: 0, y: 0 },  // simplified: let RMF assign from robot's current position
+                goal:  { x: pos.x, y: pos.y, yaw: rotation },
+            }).catch(err => console.error('[useNavigationTool] createTask failed:', err));
+
         } else if (activeTool === 'POSE') {
-            const cov = [0.25, 0, 0, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0, 0.0685, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0.0685];
-            initTopic.publish({
-                header: { frame_id: 'map', stamp: stamp },
-                pose: { pose: { position: { x: pos.x, y: pos.y, z: 0 }, orientation: orientation }, covariance: cov }
-            });
+            // Initial pose still sent via rosbridge (/initialpose) — AMCL re-localisation
+            if (ros && window.ROSLIB) {
+                const stamp = { sec: 0, nanosec: 0 };
+                const cov = [0.25, 0, 0, 0, 0, 0, 0, 0.25, 0, 0, 0, 0, 0, 0, 0.0685, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0.1, 0, 0, 0, 0, 0, 0, 0.0685];
+                const initTopic = new window.ROSLIB.Topic({ ros, name: TOPIC_INIT, messageType: 'geometry_msgs/msg/PoseWithCovarianceStamped' });
+                initTopic.publish({
+                    header: { frame_id: 'map', stamp },
+                    pose: { pose: { position: { x: pos.x, y: pos.y, z: 0 }, orientation }, covariance: cov }
+                });
+            }
         }
 
         if (setActiveTool) setActiveTool(null);
@@ -129,7 +136,6 @@ export function useNavigationTool(ros, scene, camera, floorPlane, activeTool, se
 
         if (controls) {
             controls.enabled = true;
-            // Note: View mode reset is handled by useMapScene or similar if needed
         }
     };
 

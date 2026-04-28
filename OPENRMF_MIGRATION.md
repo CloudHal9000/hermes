@@ -1212,9 +1212,22 @@ Semana 8: Frontend + Testes E2E
    - [x] `src/components/tasks/TaskCard.jsx` — badge animado por status, botão cancelar
    - [x] Testes: `useRMFApi` (8 testes) + `useFleetState` (6 testes) — 32 testes totais passam
    - [x] `scripts/validate-week3.sh` — 15 checks
-   - [ ] Integrar useRMFApi no App.jsx → Semana 4
-   - [ ] Integrar useRMFPoses no Map3D → Semana 4
-   - [ ] Adicionar TaskManager ao layout → Semana 4
+   - [x] Integrar useRMFApi no App.jsx → feito Semana 4
+   - [x] Integrar useRMFPoses no Map3D → feito Semana 4
+   - [x] Adicionar TaskManager ao layout → feito Semana 4
+
+6. ✅ **Semana 4**: Integração Final — MVP
+   - [x] `src/components/navigation/map-layers/useMultiRobotModel.js` — N robôs com URDF + cores distintas por índice
+   - [x] `src/components/navigation/Map3D.jsx` — usa useMultiRobotModel + useRMFPoses; remove useTfGraph; ros mantido para sensores
+   - [x] `src/components/navigation/map-layers/useNavigationTool.js` — GOAL via createTask() (RMF); POSE via /initialpose (rosbridge)
+   - [x] `src/components/navigation/map-layers/useLidarLayer.js` — tfGraph removido; grupo posicionado pelo RMF
+   - [x] `src/App.jsx` — useRMFApi() + useFleetState() + TaskManager; useRos() LEGACY mantido para sensores
+   - [x] `src/components/fleet/FleetSelector.jsx` — modo RMF (campo fleet) e modo legado com autodetecção
+   - [x] `CLAUDE.md` — atualizado para arquitetura pós-MVP
+   - [x] `scripts/validate-week4.sh` — 16 checks; exit 0
+   - [x] 32 testes passam; build e lint limpos
+
+**✅ MVP completo — Hermes pronto para uso com open-RMF**
 
 ---
 

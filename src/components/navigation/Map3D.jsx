@@ -2,38 +2,41 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 import { useMapScene } from './map-layers/useMapScene';
-import { useTfGraph } from './map-layers/useTfGraph';
-import { useRobotModel } from './map-layers/useRobotModel';
+import { useMultiRobotModel } from './map-layers/useMultiRobotModel';
+import { useRMFPoses } from './map-layers/useRMFPoses';
+import { useFleetState } from '../../hooks/useFleetState';
 import { useLidarLayer } from './map-layers/useLidarLayer';
 import { useCostmapLayer } from './map-layers/useCostmapLayer';
 import { usePathLayer } from './map-layers/usePathLayer';
 import { useNavigationTool } from './map-layers/useNavigationTool';
 import { AMCLHelper } from '../../utils/amclHelper';
 
+// ros is still passed for rosbridge sensor data (costmaps, LiDAR) — LEGACY until Phase 4
 export default function Map3D({ ros, showFootprint, viewMode, activeTool, setActiveTool }) {
-    // 0. Container Ref (Callback Ref pattern to ensure existence)
+    // 0. Container
     const [mountNode, setMountNode] = useState(null);
     const mountRefCallback = useCallback((node) => {
-        if (node !== null) {
-            setMountNode(node);
-        }
+        if (node !== null) setMountNode(node);
     }, []);
-    
+
     // 1. Scene Setup
     const { scene, camera, renderer, controls, floorPlane, isReady } = useMapScene(mountNode, viewMode);
 
-    // 2. TF Graph (Centralized Transform System)
-    const tfGraph = useTfGraph(ros);
+    // 2. RMF Fleet State — robots[] and their poses (RMF API, not TF graph)
+    const { robots } = useFleetState();
+    const rmfPoses    = useRMFPoses();
 
-    // 3. Robot Model (Visuals + Footprint)
-    const { update: updateRobot, robotGroup } = useRobotModel(ros, scene, tfGraph, showFootprint);
+    // 3. Multi-robot Models (URDF groups positioned by RMF poses)
+    const { update: updateRobots, robotGroup } = useMultiRobotModel(robots, rmfPoses, scene, showFootprint);
 
     // 4. Sensors & Data Layers
-    useLidarLayer(ros, robotGroup, tfGraph);
+    // ros still required here: costmaps and LiDAR stream via rosbridge (:9090)
+    useLidarLayer(ros, robotGroup);        // tfGraph removed — group positioned by RMF
     useCostmapLayer(ros, scene);
     usePathLayer(ros, scene);
 
     // 5. Tools (Navigation / AMCL)
+    // ros kept for POSE tool (/initialpose via rosbridge); GOAL uses createTask via RMF
     const { handlePointerDown, handlePointerMove, handlePointerUp } = useNavigationTool(
         ros, scene, camera, floorPlane, activeTool, setActiveTool
     );
@@ -52,7 +55,7 @@ export default function Map3D({ ros, showFootprint, viewMode, activeTool, setAct
         };
     }, [ros]);
 
-    // Mode Listener
+    // Mode Listener (rosbridge — robot reports AUTONOMOUS/MANUAL via mode_str)
     useEffect(() => {
         if (!ros) return;
         const modeListener = new window.ROSLIB.Topic({ ros, name: '/robot/mode_str', messageType: 'std_msgs/String' });
@@ -72,48 +75,44 @@ export default function Map3D({ ros, showFootprint, viewMode, activeTool, setAct
         let animationId;
         const animate = () => {
             animationId = requestAnimationFrame(animate);
-            
             if (controls) controls.update();
-            if (updateRobot) updateRobot();
-            
+            if (updateRobots) updateRobots();   // syncs all robot groups with RMF poses
             renderer.render(scene, camera);
         };
         animate();
 
         return () => cancelAnimationFrame(animationId);
-    }, [isReady, renderer, scene, camera, controls, updateRobot]);
+    }, [isReady, renderer, scene, camera, controls, updateRobots]);
 
     // Input Handlers
     const onPointerDown = (e) => {
         if (controls && activeTool) controls.enabled = false;
         if (mountNode) handlePointerDown(e, mountNode);
     };
-
     const onPointerMove = (e) => {
         if (mountNode) handlePointerMove(e, mountNode);
     };
-
     const onPointerUp = (e) => {
         handlePointerUp(e, controls);
     };
 
     return (
         <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-            <div 
-                ref={mountRefCallback} 
-                onPointerDown={onPointerDown} 
-                onPointerMove={onPointerMove} 
-                onPointerUp={onPointerUp} 
-                style={{ width: '100%', height: '100%', touchAction: 'none' }} 
+            <div
+                ref={mountRefCallback}
+                onPointerDown={onPointerDown}
+                onPointerMove={onPointerMove}
+                onPointerUp={onPointerUp}
+                style={{ width: '100%', height: '100%', touchAction: 'none' }}
             />
         </div>
     );
 }
 
 Map3D.propTypes = {
-    ros: PropTypes.object,
+    ros:          PropTypes.object,   // rosbridge connection — sensors only (LEGACY until Phase 4)
     showFootprint: PropTypes.bool,
-    viewMode: PropTypes.string,
-    activeTool: PropTypes.string,
+    viewMode:     PropTypes.string,
+    activeTool:   PropTypes.string,
     setActiveTool: PropTypes.func
 };
