@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>freebotics_rmf_adapter</name>
+  <version>0.1.0</version>
+  <description>
+    RMF Fleet Adapter for Freebotics robots.
+    Translates ROS 2 topics (tf, battery_state, mode_str) into RMF FleetState,
+    and forwards RMF path/mode requests to Nav2 goals.
+    Phase 1 MVP: topic-based FleetState publication.
+    Phase 2+: full rmf_fleet_adapter C++ API integration.
+  </description>
+  <maintainer email="dev@needtech.com.br">NeedTech</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <!-- Runtime dependencies used by the compiled node -->
+  <depend>rclcpp</depend>
+  <depend>rmf_fleet_msgs</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2</depend>
+  <depend>geometry_msgs</depend>
+  <depend>sensor_msgs</depend>
+  <depend>std_msgs</depend>
+
+  <!-- Future Phase 2+ — full fleet adapter C++ API -->
+  <depend>rmf_fleet_adapter</depend>
+
+  <!-- Future Phase 2+ — task management -->
+  <depend>rmf_task</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

@@ -1175,10 +1175,18 @@ Semana 8: Frontend + Testes E2E
 
 1. ✅ **Pesquisa concluída** → Documentação criada (este arquivo)
 2. ✅ **Arquitetura aprovada** → Plano de 4 semanas validado
-3. ⬜ **Semana 1**: Começar setup backend
-   - [ ] Instalar ROS 2 Humble
-   - [ ] Clonar e compilar rmf_demos
-   - [ ] Iniciar desenvolvimento de Fleet Adapter
+3. ✅ **Semana 1**: Setup backend
+   - [x] Script de setup criado: `scripts/setup-ros2-rmf.sh`
+   - [x] `freebotics_rmf_adapter` criado: `ros2/freebotics_rmf_adapter/`
+     - `src/freebotics_fleet_adapter.cpp` — nó ROS 2 completo e compilável
+     - `config/freebotics.yaml` — source of truth de configuração
+     - `launch/adapter.launch.py` — launch file com override de `robot_name`
+     - `CMakeLists.txt` + `package.xml`
+   - [x] Script de validação: `scripts/validate-week1.sh`
+   - [ ] Dev executa `setup-ros2-rmf.sh` na máquina alvo
+   - [ ] Dev compila workspace (`colcon build`) e roda `validate-week1.sh`
+   - [ ] `rmf_demos` lança com 2 robôs simulados (validação manual)
+   - [ ] `freebotics_fleet_adapter` publica em `/fleet_states` sem crash
 
 ---
 

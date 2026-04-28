@@ -1,0 +1,32 @@
+freebotics_fleet_adapter:
+  ros__parameters:
+    # ── Fleet / robot identity ─────────────────────────────────────────────────
+    # Used by RMF to identify this fleet in the Traffic Schedule and Task Manager.
+    fleet_name: "freebotics"
+    robot_name: "freebotics_001"
+
+    # ── Physical characteristics (Traffic Schedule) ────────────────────────────
+    # RMF uses these to compute safe headways and deconflict paths.
+    max_speed: 0.5          # m/s
+    max_accel: 0.3          # m/s²
+    footprint_radius: 0.35  # metres — conservative bounding circle for deconfliction
+
+    # ── ROS 2 coordinate frames ────────────────────────────────────────────────
+    map_frame: "map"
+    base_frame: "base_footprint"
+
+    # ── Subscribed topics (Robot → Adapter) ───────────────────────────────────
+    battery_topic: "/battery_state"
+    mode_topic: "/robot/mode_str"
+
+    # ── Published topics (Adapter → Robot) ────────────────────────────────────
+    goal_topic: "/goal_pose"
+
+    # ── RMF API Server ─────────────────────────────────────────────────────────
+    # The adapter itself does not make HTTP calls — the RMF API Server subscribes
+    # to the fleet_states ROS topic published by this node.
+    # This URL is logged at startup for observability.
+    rmf_server_url: "http://localhost:7878"
+
+    # ── Publish rate ───────────────────────────────────────────────────────────
+    fleet_state_publish_rate: 10.0   # Hz — must match RMF Traffic Schedule update rate
