@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ui": "vitest --ui",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "nipplejs": "^0.10.2",
@@ -16,19 +20,26 @@
     "react-gauge-component": "^1.2.64",
     "react-router-dom": "^7.10.1",
     "roslib": "^2.0.1",
+    "socket.io-client": "^4.8.3",
     "three": "^0.181.2",
-    "urdf-loader": "^0.12.6"
+    "urdf-loader": "^0.12.6",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.3",
+    "@vitest/ui": "^4.1.5",
     "eslint": "^9.13.0",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.11.0",
-    "vite": "^5.4.10"
+    "jsdom": "^29.1.0",
+    "vite": "^5.4.10",
+    "vitest": "^4.1.5"
   }
 }
