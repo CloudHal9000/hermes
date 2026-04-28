@@ -1,0 +1,16 @@
+config = {
+    "host": "0.0.0.0",
+    "port": 8000,
+    "db_url": "sqlite://:memory:",
+    "public_url": "http://localhost:8000",
+    "cache_directory": "run/cache",
+    "log_level": "INFO",
+    "builtin_admin": "admin",
+    "jwt_public_key": None,
+    "jwt_secret": "hermes-dev-secret",
+    "oidc_url": None,
+    "aud": "rmf_api_server",
+    "iss": "stub",
+    "ros_args": [],
+    "timezone": "America/Sao_Paulo",
+}
