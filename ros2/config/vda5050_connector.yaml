@@ -1,0 +1,39 @@
+vda5050_connector:
+  ros__parameters:
+    # ─── MQTT Broker Configuration ───────────────────────────────────────
+    # Where vda5050_connector publishes/subscribes for robot messages
+    mqtt_host: "localhost"
+    mqtt_port: 1883
+    mqtt_username: ""
+    mqtt_password: ""
+
+    # ─── Topic Naming ────────────────────────────────────────────────────
+    # VDA5050 topics follow: uagv/v2/{manufacturer}/{serial}/{type}
+    # Types: state, order, action
+    mqtt_topic_prefix: "uagv/v2"
+
+    # ─── Fleet Integration ───────────────────────────────────────────────
+    # All VDA5050 robots appear under this fleet name in RMF
+    fleet_name: "vda5050_fleet"
+
+    # Default map level where robots operate
+    # Must match a level in the RMF world database
+    default_level: "L1"
+
+    # ─── Publishing Rates ───────────────────────────────────────────────
+    # Frequency to publish RMF fleet state back to MQTT (Hz)
+    state_publish_rate: 2.0
+
+    # ─── Timeouts ───────────────────────────────────────────────────────
+    # Consider robot offline if no state message for N seconds
+    robot_timeout: 30.0
+
+    # Task execution timeout (seconds)
+    task_timeout: 300.0
+
+    # ─── Behavior ───────────────────────────────────────────────────────
+    # Auto-remove robots that disconnect
+    auto_remove_disconnected_robots: true
+
+    # Graceful shutdown — wait for robots to acknowledge before stopping
+    graceful_shutdown_timeout: 10.0

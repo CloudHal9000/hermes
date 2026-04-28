@@ -9,26 +9,42 @@
  * mode.mode, location.level_name) produced by the real adapter, and the
  * src/types/rmf.d.ts format (id, battery, status, location.level) used by
  * the type guards and test mocks.
+ *
+ * Protocol inference: automatically detects ROS 2 vs VDA5050 based on fleet_name.
+ * Adds 'protocol' field for UI badges (FleetSelector shows [VDA5050] for non-ROS2).
  */
 
 import { useMemo } from 'react';
 import { useFleetStore } from '../store/fleetStore';
 import { useRMFApi } from './useRMFApi';
 
+function inferProtocol(robot) {
+  // Explicitly provided protocol (future expansion when RMF API exposes it)
+  if (robot.protocol) return robot.protocol;
+  // Infer from fleet_name: vda5050_fleet → vda5050
+  if (robot.fleet_name?.includes('vda5050')) return 'vda5050';
+  // Infer from fleet_name: freebotics / ROS-specific → ros2
+  if (robot.fleet_name?.includes('freebotics') || robot.fleet_name?.includes('ros2')) return 'ros2';
+  // Default: assume ROS 2 (native RMF adapter)
+  return 'ros2';
+}
+
 function normalizeRobot(r) {
   return {
     // identity — prefer rmf_fleet_msgs name, fall back to REST-API id
-    id:      r.name   ?? r.id,
+    id:       r.name   ?? r.id,
     // location
-    x:       r.location?.x   ?? 0,
-    y:       r.location?.y   ?? 0,
-    yaw:     r.location?.yaw ?? 0,
-    level:   r.location?.level_name ?? r.location?.level ?? 'L1',
+    x:        r.location?.x   ?? 0,
+    y:        r.location?.y   ?? 0,
+    yaw:      r.location?.yaw ?? 0,
+    level:    r.location?.level_name ?? r.location?.level ?? 'L1',
     // battery — rmf_fleet_msgs uses battery_percent (0-100), types use battery
-    battery: r.battery_percent ?? r.battery ?? 0,
+    battery:  r.battery_percent ?? r.battery ?? 0,
     // mode — rmf_fleet_msgs: mode.mode (uint32), types: status (string)
-    status:  r.mode?.mode ?? r.status ?? 0,
-    fleet:   r.fleet_name ?? 'freebotics',
+    status:   r.mode?.mode ?? r.status ?? 0,
+    fleet:    r.fleet_name ?? 'freebotics',
+    // protocol: 'ros2' | 'vda5050' — used for UI badges
+    protocol: inferProtocol(r),
   };
 }
 

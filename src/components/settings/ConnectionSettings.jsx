@@ -130,6 +130,7 @@ export const ConnectionSettings = ({ isOpen, onClose }) => {
     rmfApiUrl: 'http://localhost:7878',
     rosbridgeUrl: 'ws://localhost:9090',
     robotIp: 'localhost',
+    mqttBrokerUrl: '',
   });
 
   const [loading, setLoading] = useState(false);
@@ -226,6 +227,38 @@ export const ConnectionSettings = ({ isOpen, onClose }) => {
             onBlur={e => Object.assign(e.target.style, { background: styles.input.background })}
           />
           <div style={styles.note}>IP address for legacy rosbridge connections</div>
+        </div>
+
+        <div style={{ marginTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px' }}>
+          <details style={{ cursor: 'pointer' }}>
+            <summary style={{
+              color: 'rgba(255, 255, 255, 0.5)',
+              fontSize: '12px',
+              fontWeight: 500,
+              textTransform: 'uppercase',
+              letterSpacing: '0.5px',
+              userSelect: 'none',
+              outline: 'none',
+            }}>
+              ⚙️ Advanced Settings (VDA5050)
+            </summary>
+            <div style={{ marginTop: '12px' }}>
+              <label style={styles.label}>MQTT Broker URL</label>
+              <input
+                type="text"
+                value={settings.mqttBrokerUrl ?? ''}
+                onChange={e => handleInputChange('mqttBrokerUrl', e.target.value)}
+                placeholder="mqtt://localhost:1883 (optional)"
+                style={{ ...styles.input }}
+                onFocus={e => Object.assign(e.target.style, styles.inputFocus)}
+                onBlur={e => Object.assign(e.target.style, { background: styles.input.background })}
+              />
+              <div style={styles.note}>
+                Required only if MQTT broker is on a different host. Leave empty to use localhost:1883.
+                Used by vda5050_connector for heterogeneous robot support.
+              </div>
+            </div>
+          </details>
         </div>
 
         {!isElectron && (

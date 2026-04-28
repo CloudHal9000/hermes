@@ -36,14 +36,32 @@ function RMFRobotCard({ robot }) {
       flexDirection: 'column',
       gap: 4,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#eee', letterSpacing: '0.03em' }}>
-          {robot.id}
-        </span>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+          <span style={{ fontSize: 12, fontWeight: 700, color: '#eee', letterSpacing: '0.03em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {robot.id}
+          </span>
+          {robot.protocol === 'vda5050' && (
+            <span style={{
+              fontSize: '8px',
+              fontWeight: 600,
+              letterSpacing: '0.5px',
+              color: '#a855f7',
+              border: '1px solid #a855f7',
+              borderRadius: '3px',
+              padding: '1px 4px',
+              opacity: 0.85,
+              flexShrink: 0,
+            }}>
+              VDA5050
+            </span>
+          )}
+        </div>
         <span style={{
           fontSize: 9, fontWeight: 600, padding: '1px 5px',
           borderRadius: 3, background: `${modeColor}22`,
           color: modeColor, border: `1px solid ${modeColor}50`,
+          flexShrink: 0,
         }}>
           {modeLabel}
         </span>
