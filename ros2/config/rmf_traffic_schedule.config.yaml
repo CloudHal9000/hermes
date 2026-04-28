@@ -1,0 +1,33 @@
+# =============================================================================
+# rmf_traffic_schedule.config.yaml — Traffic Schedule parameters
+#
+# Used by the rmf_traffic_schedule ROS 2 node for conflict detection and
+# deconfliction between robots. Conservative values for MVP with 1-2 robots.
+#
+# Tuning guide:
+#   - More robots → reduce conflict_check_interval (faster detection)
+#   - Faster robots → increase safety_margin
+#   - Larger environment → increase planning_horizon
+# =============================================================================
+
+rmf_traffic_schedule:
+  ros__parameters:
+    # ── Conflict detection ────────────────────────────────────────────────────
+    # How often (ms) the schedule checks for trajectory conflicts.
+    # 100ms is sufficient for robots at max_speed=0.5m/s.
+    conflict_check_interval_ms: 100
+
+    # ── Planning ──────────────────────────────────────────────────────────────
+    # How far ahead (seconds) trajectories are planned.
+    # With freebotics max_speed=0.5m/s, 30s = 15m lookahead — adequate for L1.
+    planning_horizon_s: 30.0
+
+    # ── Safety margin ─────────────────────────────────────────────────────────
+    # Extra clearance (metres) added to footprint_radius for deconfliction.
+    # footprint_radius=0.35m + safety_margin=0.5m = 0.85m effective radius.
+    safety_margin_m: 0.5
+
+    # ── Participant timeout ───────────────────────────────────────────────────
+    # How long (seconds) before a participant (fleet adapter) that stops
+    # publishing is considered lost and removed from the schedule.
+    participant_timeout_s: 30.0

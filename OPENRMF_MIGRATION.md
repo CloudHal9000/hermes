@@ -1188,6 +1188,20 @@ Semana 8: Frontend + Testes E2E
    - [ ] `rmf_demos` lança com 2 robôs simulados (validação manual)
    - [ ] `freebotics_fleet_adapter` publica em `/fleet_states` sem crash
 
+4. ⬜ **Semana 2**: RMF API Server + Integração
+   - [x] `ros2/config/rmf_api_server.config.yaml` criado
+   - [x] `ros2/config/rmf_traffic_schedule.config.yaml` criado
+   - [x] `ros2/config/rosbridge.config.yaml` criado
+   - [x] `ros2/launch/hermes_backend.launch.py` criado (Traffic Schedule + Adapter + API Server + rosbridge)
+   - [x] `ros2/launch/hermes_sim.launch.py` criado (backend + rmf_demos)
+   - [x] `scripts/test-rmf-pipeline.sh` criado (pipeline e2e: adapter → API Server → curl)
+   - [x] `scripts/validate-week2.sh` criado (file + live service checks)
+   - [x] `docs/troubleshooting-backend.md` criado (8 cenários de falha documentados)
+   - [ ] Dev executa `hermes_backend.launch.py` e confirma `:8000`/`:7878` ativo
+   - [ ] Dev roda `test-rmf-pipeline.sh` e todos os checks passam
+   - [ ] Dev roda `validate-week2.sh --with-backend` sem falhas
+   - [ ] Alinhar porta 8000 (Docker) ↔ 7878 (native) antes de produção
+
 ---
 
 ## Perguntas Frequentes (FAQ)

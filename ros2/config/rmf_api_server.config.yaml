@@ -1,0 +1,61 @@
+# =============================================================================
+# rmf_api_server.config.yaml — RMF API Server configuration (Hermes project)
+#
+# IMPORTANT: Two config formats exist for rmf_api_server:
+#
+#   1. ROS 2 launch (this file) — used by hermes_backend.launch.py
+#      Format: <node_name>: ros__parameters: <values>
+#
+#   2. Docker/standalone (docker/api-server-config.py)
+#      Format: Python dict — used by docker-compose.yml
+#
+# The RMF_JWT_SECRET env var MUST be set before launching.
+# Never hardcode a secret in this file.
+# =============================================================================
+
+rmf_api_server:
+  ros__parameters:
+    # ── Server ──────────────────────────────────────────────────────────────
+    # Port 7878 is the RMF convention; docker/api-server-config.py uses 8000
+    # for the current dev environment. Align them when promoting to production.
+    port: 7878
+    host: "0.0.0.0"
+
+    # Persistent SQLite DB for task history (use absolute path in production)
+    db_url: "sqlite:///hermes_rmf.db"
+    cache_directory: "/tmp/hermes_rmf_cache"
+    log_level: "INFO"
+
+    # ── Authentication ────────────────────────────────────────────────────────
+    # Secret is injected at launch time from the RMF_JWT_SECRET environment
+    # variable — see hermes_backend.launch.py.
+    # Audience must match VITE_RMF_TOKEN's `aud` claim ("rmf_api_server").
+    jwt_secret: ""           # overridden at runtime via env var
+    jwt_audience: "rmf_api_server"
+    jwt_issuer: "stub"       # "stub" for dev; Keycloak issuer URL in production
+
+    # ── Public URL (for self-referencing links in API responses) ─────────────
+    public_url: "http://localhost:7878"
+
+    # ── Time zone ────────────────────────────────────────────────────────────
+    timezone: "America/Sao_Paulo"
+
+    # ── Admin user (dev only — disable or rotate in production) ──────────────
+    builtin_admin: "admin"
+
+# =============================================================================
+# Registered fleets (informational — actual fleet state comes from ROS topics)
+# =============================================================================
+# fleets:
+#   freebotics:
+#     robots:
+#       - name: "freebotics_001"
+#         model: "freebotics_v1"
+
+# =============================================================================
+# CORS origins
+# Allowed origins for the HTTP API (affects browser fetch, not ROS topics)
+# =============================================================================
+# cors_origins:
+#   - "http://localhost:5173"   # Vite dev
+#   - "http://localhost:4173"   # Vite preview

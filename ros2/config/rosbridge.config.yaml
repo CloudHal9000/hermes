@@ -1,0 +1,62 @@
+# =============================================================================
+# rosbridge.config.yaml — rosbridge_suite configuration
+#
+# DEPRECATED NOTICE: rosbridge is used in Phases 1-3 for sensor data
+# (costmaps, LiDAR) that open-RMF does not yet expose via its API.
+# Will be retired in Phase 4 when the RMF API Server gains sensor streaming.
+#
+# Deliberately separated from RMF API Server (:7878) to avoid port conflicts:
+#   :7878 → RMF API Server (fleet state, tasks, navigation commands)
+#   :9090 → rosbridge (sensor data: costmaps, LiDAR, mode_str)
+# =============================================================================
+
+rosbridge_websocket:
+  ros__parameters:
+    # ── Network ────────────────────────────────────────────────────────────────
+    port: 9090
+    address: "0.0.0.0"
+
+    # ── CBOR compression ──────────────────────────────────────────────────────
+    # Reduces costmap bandwidth ~60% (OccupancyGrid is dense binary data).
+    # Matches the `compression: 'cbor'` option in useCostmapLayer.js.
+    use_compression: true
+
+    # ── Topic whitelist ───────────────────────────────────────────────────────
+    # Only topics in this list are accessible via rosbridge WebSocket.
+    # Anything not listed is silently blocked — defence in depth.
+    #
+    # NOTE: /tf and /cmd_vel are intentionally excluded.
+    #   /tf      → robot pose comes from RMF FleetState (not raw TF)
+    #   /cmd_vel → manual control disabled in Phases 2+ (use RMF tasks)
+    topics_glob:
+      - "/local_costmap/costmap"
+      - "/global_costmap/costmap"
+      - "/map"
+      - "/lidar/front_aligned"
+      - "/lidar/rear_aligned"
+      - "/robot/mode_str"
+      - "/initialpose"
+      - "/local_costmap/published_footprint"
+      - "/amcl_pose"
+      - "/particlecloud"
+
+    # ── Per-topic rate limiting ───────────────────────────────────────────────
+    # Prevents sensor flood from saturating the browser WebSocket connection.
+    # Values are in msgs/second.
+    #
+    # Note: rosbridge_server does not natively support per-topic rate limits
+    # in this YAML format. These are documented here as reference values for
+    # manual throttle_rate settings on the client side (roslib Topic options).
+    # To enforce server-side: use rosbridge topic_manager configuration or
+    # a custom middleware in front of rosbridge.
+    #
+    # client_side_rate_limits (for roslib Topic { throttle_rate: <ms> }):
+    #   /local_costmap/costmap:  throttle_rate: 200   # 5 Hz
+    #   /global_costmap/costmap: throttle_rate: 500   # 2 Hz
+    #   /map:                    throttle_rate: 10000 # 0.1 Hz (latched, rarely changes)
+    #   /lidar/front_aligned:    throttle_rate: 100   # 10 Hz
+    #   /lidar/rear_aligned:     throttle_rate: 100   # 10 Hz
+
+    # ── Connection limits ──────────────────────────────────────────────────────
+    # Maximum simultaneous WebSocket connections (1 per browser tab is typical)
+    max_connection_lifetime: 0  # 0 = unlimited
