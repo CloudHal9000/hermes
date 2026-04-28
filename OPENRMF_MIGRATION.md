@@ -1202,6 +1202,20 @@ Semana 8: Frontend + Testes E2E
    - [ ] Dev roda `validate-week2.sh --with-backend` sem falhas
    - [ ] Alinhar porta 8000 (Docker) ↔ 7878 (native) antes de produção
 
+5. ✅ **Semana 3**: Frontend — hooks RMF + TaskManager UI
+   - [x] `src/hooks/useRMFApi.js` — WebSocket com backoff exponencial (1→2→4→…→30s) + REST (createTask, cancelTask, getTask)
+   - [x] `src/hooks/useFleetState.js` — lê do Zustand fleetStore, transforma para formato UI, expõe createTask/cancelTask
+   - [x] `src/components/navigation/map-layers/useRMFPoses.js` — converte robots[] para poses Three.js sem BFS/roslib
+   - [x] `src/components/tasks/TaskManager.jsx` — painel com status de conexão, TaskForm + TaskList
+   - [x] `src/components/tasks/TaskForm.jsx` — categoria + goal X/Y/Yaw, div+onClick (sem form tag)
+   - [x] `src/components/tasks/TaskList.jsx` — ordenação executing→pending→resto, scroll acima de 5
+   - [x] `src/components/tasks/TaskCard.jsx` — badge animado por status, botão cancelar
+   - [x] Testes: `useRMFApi` (8 testes) + `useFleetState` (6 testes) — 32 testes totais passam
+   - [x] `scripts/validate-week3.sh` — 15 checks
+   - [ ] Integrar useRMFApi no App.jsx → Semana 4
+   - [ ] Integrar useRMFPoses no Map3D → Semana 4
+   - [ ] Adicionar TaskManager ao layout → Semana 4
+
 ---
 
 ## Perguntas Frequentes (FAQ)
