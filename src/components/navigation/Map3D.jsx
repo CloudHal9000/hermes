@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 
 import { useMapScene } from './map-layers/useMapScene';
@@ -38,11 +38,18 @@ export default function Map3D({ ros, showFootprint, viewMode, activeTool, setAct
         ros, scene, camera, floorPlane, activeTool, setActiveTool
     );
 
-    // Legacy: AMCL Helper initialization
+    // PERF: cleanup do AMCLHelper para evitar subscription leak no unmount
+    // Ref: docs/performance-benchmark-report.md — Quick Win 2
+    const amclHelperRef = useRef(null);
     useEffect(() => {
-        if (ros) {
-            new AMCLHelper(ros); 
-        }
+        if (!ros) return;
+        amclHelperRef.current = new AMCLHelper(ros);
+        return () => {
+            if (amclHelperRef.current) {
+                amclHelperRef.current.destroy();
+                amclHelperRef.current = null;
+            }
+        };
     }, [ros]);
 
     // Mode Listener

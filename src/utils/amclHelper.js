@@ -76,4 +76,13 @@ export class AMCLHelper {
     console.log('🔄 Chamando serviço de Global Localization...');
     service.callService(request, (result) => console.log('✅ Resposta do serviço OK.', result), (err) => console.error('❌ Erro no serviço:', err));
   }
+
+  // PERF: cleanup do AMCLHelper para evitar subscription leak no unmount
+  // Ref: docs/performance-benchmark-report.md — Quick Win 2
+  // Nota: esta classe atualmente só publica (setInitialPose, setGoal) e não
+  // mantém subscriptions persistentes. O método existe para garantir cleanup
+  // correto caso subscriptions sejam adicionadas no futuro.
+  destroy() {
+    this.ros = null;
+  }
 }
