@@ -1,0 +1,27 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: hermes-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rmf
+      POSTGRES_PASSWORD: rmf_dev_pass
+      POSTGRES_DB: hermes_dev
+    ports:
+      - "5435:5432"
+    volumes:
+      - hermes_pgdata:/var/lib/postgresql/data
+
+  mqtt:
+    image: emqx/emqx:latest
+    container_name: hermes-mqtt
+    restart: unless-stopped
+    ports:
+      - "1884:1883"
+      - "18083:18083"
+    volumes:
+      - hermes_emqxdata:/opt/emqx/data
+
+volumes:
+  hermes_pgdata:
+  hermes_emqxdata:

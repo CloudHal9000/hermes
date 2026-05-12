@@ -1,166 +1,129 @@
-# CLAUDE.md
+# Hermes — CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## O que é este projeto
 
-## Project Overview
+Hermes é um Fleet Management System (FMS) para AGVs industriais.
+Produto único composto por dashboard React e backend NestJS,
+com suporte nativo a VDA 5050 v2.0 sobre MQTT e multi-tenancy.
 
-Hermes is a React-based fleet management dashboard for controlling and monitoring multi-robot systems via **open-RMF**. It uses the RMF API Server for fleet state and task dispatch, rosbridge WebSocket for sensor data (costmaps, LiDAR), and Three.js for 3D visualization of robots, maps and navigation.
+## Estrutura do Monorepo
+hermes/
+├── packages/
+│   ├── dashboard/          ← React + Vite (frontend)
+│   └── gateway/            ← NestJS + Prisma (backend)
+├── docker/                 ← Open-RMF api-server (legado/referência)
+├── ros2/                   ← Fleet adapter ROS 2 (freebotics_rmf_adapter)
+├── docs/
+├── docker-compose.dev.yml  ← PostgreSQL (5435) + EMQX (1884)
+└── pnpm-workspace.yaml
 
-## Development Setup
+## Stack
 
-### Common Commands
+### Dashboard (packages/dashboard/)
+- React 18.3 + Vite
+- Three.js + URDF loader (visualização 3D)
+- roslib (legado — deprecar progressivamente)
+- react-router-dom, nipplejs, react-gauge-component
 
-- **Start development server**: `npm run dev` — Vite dev server with HMR
-- **Build for production**: `npm run build` — optimised bundle in `dist/`
-- **Lint**: `npm run lint`
-- **Tests**: `npm run test:run` — 32+ tests, Vitest + jsdom
-- **Backend check**: `bash scripts/setup-ros2-rmf.sh` — verify ROS 2 / RMF prerequisites
+### Gateway (packages/gateway/)
+- NestJS (Node.js 20+, TypeScript strict mode)
+- Prisma + PostgreSQL 16
+- VDA 5050 v2.0 sobre MQTT (broker EMQX)
+- Socket.io (@nestjs/websockets)
+- JWT com RBAC (@nestjs/jwt, @nestjs/passport)
 
-### Backend Launch (ROS 2)
+## Arquitetura
+Mutley (ROS 2 / Nav2)
+↓
+freebotics_rmf_adapter (ros2/) + RobotCommandHandle
+↓
+MQTT Broker (EMQX) → /{tenantId}/v2/{manufacturer}/{serialNumber}/state
+↓
+Gateway NestJS (packages/gateway/)
+├── MqttService         → subscribe por tenant
+├── VDA5050Adapter      → AGVState → RmfFleetState
+├── TenantFleetService  → estado em memória por tenant
+├── FleetsController    → REST /api/fleets
+└── FleetsGateway       → Socket.io rooms por tenant
+↓
+Dashboard React (packages/dashboard/)
+├── useFleetState       → consome Socket.io do gateway
+├── Map3D               → Three.js, visualização 3D
+└── useRosVisuals       → legado roslib (deprecar Fase 4)
 
-```bash
-export RMF_JWT_SECRET=hermes-dev-secret
-ros2 launch ros2/launch/hermes_backend.launch.py
-# or:
-docker compose -f docker/docker-compose.yml up
-```
+## Multi-tenancy
 
-### Validation Scripts
+- Todos os 42 models Prisma têm tenantId
+- MQTT topics: /{tenantId}/v2/+/+/state
+- Socket.io rooms: {tenantId}:fleet:{name}, {tenantId}:robot:{name}
+- JWT claim obrigatória: tenantId
 
-| Script | Purpose |
+## VDA 5050 → RMF mapeamento
+
+| VDA 5050 | RMF |
 |---|---|
-| `bash scripts/validate-week1.sh` | ROS 2 + adapter compiled |
-| `bash scripts/validate-week2.sh --with-backend` | RMF API Server + rosbridge live |
-| `bash scripts/validate-week3.sh` | Hooks + TaskManager UI |
-| `bash scripts/validate-week4.sh` | Full integration |
+| AGVState.position.x/y/theta | RmfRobotState.location.x/y/yaw |
+| AGVState.batteryState.batteryCharge | RmfRobotState.battery_percent |
+| AGVState.operatingMode AUTOMATIC + driving | mode = 0 |
+| AGVState.paused | mode = 1 |
+| AGVState.operatingMode MANUAL | mode = 3 |
+| AGVState.errors (errorLevel ERROR) | mode = 4 |
+| AGVState.lastNodeId | location.waypoint_name |
+| AGVState.position.mapId | location.level_name |
 
-### Environment Variables
-
-| Variable | Default | Notes |
-|---|---|---|
-| `VITE_RMF_API_URL` | `http://localhost:8000` | RMF API Server (8000 = Docker, 7878 = native) |
-| `VITE_RMF_WS_URL` | `ws://localhost:8000` | WebSocket URL |
-| `VITE_RMF_TOKEN` | — | JWT Bearer token — see `docs/infrastructure-requirements.md#jwt` |
-| `VITE_ROBOT_IP` | `localhost` | Robot IP for rosbridge legacy connection |
-
-## Architecture — open-RMF (Current)
-
-Data flows from robot through RMF stack to the dashboard:
-
-```
-Robot → /tf /battery_state (ROS 2)
-        ↓
-freebotics_rmf_adapter  →  rmf_fleet_msgs/FleetState (10 Hz)
-        ↓
-RMF API Server :7878    →  REST + WebSocket (fleet_states, tasks)
-        ↓
-useRMFApi               →  validates events, syncs fleetStore (Zustand)
-        ↓
-useFleetState / useRMFPoses  →  expose data to components
-        ↓
-Map3D + TaskManager     →  render fleet state, submit tasks
-```
-
-**Sensor data** (costmaps, LiDAR) still flows via rosbridge (:9090) — deprecated in Phase 4.
-
-## Application Structure
-
-### State Management
-
-- **fleetStore** (`src/store/fleetStore.ts`): Central Zustand store. Holds `robots[]`, `tasks[]`, `connectionStatus`. Populated by `useRMFApi`. Works outside React tree via `.getState()`.
-- **NotificationContext** (`src/context/NotificationContext.jsx`): Toast notifications. `addNotification(message, duration?)`.
-
-### Custom Hooks
-
-| Hook | Path | Purpose |
-|---|---|---|
-| `useRMFApi` | `src/hooks/useRMFApi.js` | WebSocket to `/fleet_states` with exponential backoff reconnect; REST helpers (createTask, cancelTask, getTask) |
-| `useFleetState` | `src/hooks/useFleetState.js` | Selects robots/tasks from fleetStore; transforms to UI format |
-| `useRMFPoses` | `src/components/navigation/map-layers/useRMFPoses.js` | Converts robots[] to Three.js `{position, quaternion}` map |
-| `useRos` | `src/hooks/useRos.js` | **LEGACY** — rosbridge connection for sensor data; kept until Phase 4 |
-| `useFleetPolling` | `src/hooks/useFleetPolling.js` | **LEGACY** — replaced by useRMFApi + useFleetState |
-
-### Main Components
-
-- **App** (`src/App.jsx`): Root. `useRMFApi()` starts WebSocket on mount. `useRos()` kept for rosbridge sensors.
-- **Map3D** (`src/components/navigation/Map3D.jsx`): Three.js scene. Uses `useMultiRobotModel` + `useRMFPoses` for N robots. `ros` prop used only by `useCostmapLayer` and `useLidarLayer`.
-- **TaskManager** (`src/components/tasks/TaskManager.jsx`): Task submission form + live task list. Consumes `useFleetState` internally.
-- **FleetSelector** (`src/components/fleet/FleetSelector.jsx`): Auto-detects RMF mode (robots have `.fleet` field) vs legacy mode (robots have `.ip` field).
-
-### Map3D Layers
-
-| Hook | Data source | Notes |
-|---|---|---|
-| `useMapScene` | — | WebGLRenderer, camera, OrbitControls |
-| `useMultiRobotModel` | fleetStore robots[] + rmfPoses | N URDF groups; replaces `useRobotModel` |
-| `useRMFPoses` | fleetStore robots[] | yaw→quaternion; replaces `useTfGraph` |
-| `useCostmapLayer` | rosbridge `/local_costmap/costmap` | DataTexture reused per frame (PERF QW1) |
-| `useLidarLayer` | rosbridge `/lidar/front_aligned` | tfGraph removed; group positioned by RMF |
-| `usePathLayer` | rosbridge `/path` | Navigation path viz |
-| `useNavigationTool` | Three.js raycasting + createTask() | GOAL → POST /tasks; POSE → /initialpose via rosbridge |
-
-### Data Flow (post-MVP)
-
-1. `useRMFApi` connects WebSocket → validates `isRMFWebSocketEvent` + `isFleetState` → `fleetStore.setFleetState()`
-2. `useFleetState` selects from store → `robotList` with UI-friendly fields
-3. `useRMFPoses` converts `robots[].location` to Three.js poses
-4. `useMultiRobotModel` syncs Three.js Groups with rmfPoses in animation loop
-5. `useNavigationTool` raycasts on pointer drag → `createTask({ category: 'navigation', goal: {x,y,yaw} })`
-6. `TaskManager` shows task list from store; cancel via `cancelTask(id)`
-7. Sensor data (costmaps, LiDAR) still reaches Map3D via rosbridge `:9090`
-
-## Testing
+## Comandos
 
 ```bash
-npm run test:run  # 32+ tests, <3s
+# Infra
+docker compose -f docker-compose.dev.yml up -d
+
+# Gateway
+cd packages/gateway
+npm install
+npx prisma migrate deploy
+npm run start:dev
+
+# Dashboard
+cd packages/dashboard
+npm install
+npm run dev
+
+# Tudo junto (raiz)
+pnpm dev:all
 ```
 
-Suites:
-- `src/store/__tests__/fleetStore.test.ts` — Zustand store actions
-- `src/types/__tests__/guards.test.ts` — isFleetState, isTaskState, isRMFWebSocketEvent
-- `src/hooks/__tests__/useRMFApi.test.js` — WebSocket lifecycle, backoff reconnect, REST
-- `src/hooks/__tests__/useFleetState.test.js` — robot normalisation, dual-format support
+## Variáveis de ambiente
 
-Mocking pattern: `vi.mock('../../lib/rmfClient')` + `rmfWebSocket.mockReturnValue(mockWs)` in `beforeEach`.
+### packages/gateway/.env
+DATABASE_URL=postgresql://rmf:rmf_dev_pass@localhost:5435/hermes_dev
+MQTT_URL=mqtt://localhost:1884
+JWT_SECRET=hermes-dev-secret
+CORS_ORIGIN=http://localhost:5173
 
-## Key Technical Rules
+## Portas
 
-### Never do this
+| Serviço | Porta |
+|---|---|
+| Dashboard (Vite dev) | 5173 |
+| Gateway (NestJS) | 3000 |
+| PostgreSQL (Docker) | 5435 |
+| EMQX MQTT | 1884 |
+| EMQX Dashboard | 18083 |
 
-- `fetch()` or `new WebSocket()` directly in hooks — use `rmfFetch()` / `rmfWebSocket()` from `src/lib/rmfClient.js`
-- CSS modules or Tailwind — all styles via inline JS objects
-- `<form>` tag — use div + onClick (project convention)
-- Hardcode `RMF_JWT_SECRET` in any file — env var only
+## Robô atual em desenvolvimento
 
-### Always do this
+**Mutley** — AGV com ROS 2 Jazzy + Nav2 + VDA 5050 v2.0 + RobotCommandHandle
 
-- New files: `.ts` / `.tsx` (TypeScript, Phases 1+)
-- Existing `.js` files: migrate only when editing for another reason
-- Store updates from outside React: `useFleetStore.getState().setXxx()`
-- Add `// LEGACY: remove Phase 4` comments when keeping deprecated rosbridge code
+## Status de migração roslib → gateway
 
-## Styling
+| Hook | Status |
+|---|---|
+| useRos | Legado — manter pra rosbridge/visualização |
+| useFleetPolling | Substituir por useFleetState (Socket.io) |
+| useTfGraph | Substituir por poses do gateway |
+| useRMFApi | Criar — consome REST + Socket.io do gateway |
+| useFleetState | Criar — estado de frota em tempo real |
 
-Dark glassmorphism theme. All styles inline with JS objects:
+## Repositório
 
-```jsx
-style={{ background: 'rgba(15,17,26,0.75)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.08)' }}
-```
-
-## ESLint
-
-```bash
-npm run lint  # pre-existing errors only in public/lib/roslib.js (vendored)
-```
-
-## Backend Overview
-
-See `docs/infrastructure-requirements.md` for full setup. Quick reference:
-
-| Service | Port | Start |
-|---|---|---|
-| RMF API Server | 8000 (Docker) / 7878 (native) | `docker compose up` or ROS 2 launch |
-| rosbridge | 9090 | Included in `hermes_backend.launch.py` |
-| freebotics_rmf_adapter | — | ROS 2 node, auto-started by launch |
-
-See `OPENRMF_MIGRATION.md` for the full 4-week migration plan and Phase 4 (VDA5050) roadmap.
+https://github.com/CloudHal9000/hermes

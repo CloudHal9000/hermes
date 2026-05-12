@@ -1,11 +1,8 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
-// eslint-disable-next-line no-undef
-const isElectron = process.env?.ELECTRON === 'true';
-
 export default defineConfig({
-  base: isElectron ? './' : '/',
+  base: '/',
   plugins: [react()],
   optimizeDeps: {
     include: ['roslib'],
@@ -18,23 +15,19 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://localhost:3000',
         changeOrigin: true,
         rewrite: (path) => path,
+      },
+      '/socket.io': {
+        target: 'http://localhost:3000',
+        changeOrigin: true,
+        ws: true,
       }
     }
   },
   define: {
-    'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:8000')
-  },
-  preview: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost:8000',
-        changeOrigin: true,
-        rewrite: (path) => path,
-      }
-    }
+    'import.meta.env.VITE_API_URL': JSON.stringify('http://localhost:3000')
   },
   test: {
     globals: true,

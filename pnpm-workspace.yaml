@@ -1,0 +1,11 @@
+packages:
+  - 'packages/*'
+allowBuilds:
+  '@nestjs/core': true
+  '@prisma/engines': true
+  electron: true
+  electron-winstaller: true
+  esbuild: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
