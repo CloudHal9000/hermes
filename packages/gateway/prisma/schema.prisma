@@ -1,0 +1,578 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================================================
+// FLEET MODELS
+// ============================================================================
+
+model FleetState {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model FleetLog {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs   FleetLogEntry[]
+  robots FleetRobotLog[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model FleetLogEntry {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  fleetId   String
+  seq       Int
+  tier      String  
+  message   String  
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  fleet FleetLog @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fleetId, seq])
+  @@index([tenantId])
+  @@index([fleetId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+model FleetRobotLog {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  fleetId   String
+  robotName String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs  FleetRobotLogEntry[]
+  fleet FleetLog             @relation(fields: [fleetId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, fleetId, robotName])
+  @@index([tenantId])
+  @@index([fleetId])
+  @@index([robotName])
+}
+
+model FleetRobotLogEntry {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  robotId   String
+  seq       Int
+  tier      String  
+  message   String  
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  robot FleetRobotLog @relation(fields: [robotId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, robotId, seq])
+  @@index([tenantId])
+  @@index([robotId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+// ============================================================================
+// TASK MODELS
+// ============================================================================
+
+model TaskRequest {
+  id        String   @id
+  tenantId  String  
+  request   Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+}
+
+model TaskState {
+  id                    String    @id
+  tenantId              String   
+  data                  Json
+  category              String?  
+  status                String?  
+  assignedTo            String?  
+  fleetName             String?  
+  robotName             String?  
+  unixMillisStartTime   DateTime?
+  unixMillisFinishTime  DateTime?
+  unixMillisRequestTime DateTime?
+  requester             String?  
+  payload               Json?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  labels TaskLabel[]
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+  @@index([status])
+  @@index([category])
+  @@index([assignedTo])
+  @@index([unixMillisStartTime])
+  @@index([unixMillisFinishTime])
+  @@index([unixMillisRequestTime])
+}
+
+model TaskLabel {
+  id         String   @id @default(cuid())
+  tenantId   String  
+  taskId     String  
+  labelName  String  
+  labelValue String? 
+  createdAt  DateTime @default(now())
+
+  taskState TaskState @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, taskId, labelName])
+  @@index([tenantId])
+  @@index([taskId])
+  @@index([labelName])
+  @@index([labelValue])
+}
+
+model TaskLog {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  taskId    String  
+  seq       Int
+  tier      String  
+  message   String  
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, taskId, seq])
+  @@index([tenantId])
+  @@index([taskId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+model TaskEventLog {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  taskId    String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs   TaskEventLogEntry[]
+  phases TaskEventPhase[]
+
+  @@unique([tenantId, taskId])
+  @@index([tenantId])
+  @@index([taskId])
+}
+
+model TaskEventLogEntry {
+  id         String   @id @default(cuid())
+  tenantId   String  
+  eventLogId String
+  seq        Int
+  tier       String  
+  message    String  
+  timestamp  BigInt
+  createdAt  DateTime @default(now())
+
+  eventLog TaskEventLog @relation(fields: [eventLogId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eventLogId, seq])
+  @@index([tenantId])
+  @@index([eventLogId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+model TaskEventPhase {
+  id         String   @id @default(cuid())
+  tenantId   String  
+  eventLogId String
+  phase      String  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  logs     TaskEventPhaseLogEntry[]
+  events   TaskEventPhaseEvent[]
+  eventLog TaskEventLog             @relation(fields: [eventLogId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eventLogId, phase])
+  @@index([tenantId])
+  @@index([eventLogId])
+  @@index([phase])
+}
+
+model TaskEventPhaseLogEntry {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  phaseId   String
+  seq       Int
+  tier      String  
+  message   String  
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  phase TaskEventPhase @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, phaseId, seq])
+  @@index([tenantId])
+  @@index([phaseId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+model TaskEventPhaseEvent {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  phaseId   String
+  event     String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  logs  TaskEventPhaseEventLogEntry[]
+  phase TaskEventPhase                @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, phaseId, event])
+  @@index([tenantId])
+  @@index([phaseId])
+  @@index([event])
+}
+
+model TaskEventPhaseEventLogEntry {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  eventId   String
+  seq       Int
+  tier      String  
+  message   String  
+  timestamp BigInt
+  createdAt DateTime @default(now())
+
+  event TaskEventPhaseEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, eventId, seq])
+  @@index([tenantId])
+  @@index([eventId])
+  @@index([tier])
+  @@index([timestamp])
+}
+
+model TaskFavorite {
+  id                          String   @id
+  tenantId                    String  
+  name                        String  
+  category                    String  
+  description                 Json
+  user                        String  
+  taskDefinitionId            String? 
+  unixMillisEarliestStartTime BigInt?
+  priority                    Json?
+  createdAt                   DateTime @default(now())
+  updatedAt                   DateTime @updatedAt
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+  @@index([user])
+  @@index([category])
+  @@index([taskDefinitionId])
+}
+
+// ============================================================================
+// SCHEDULED TASK MODELS
+// ============================================================================
+
+model ScheduledTask {
+  id          String    @id @default(cuid())
+  tenantId    String   
+  taskRequest Json
+  createdBy   String   
+  lastRan     DateTime?
+  startFrom   DateTime?
+  until       DateTime?
+  exceptDates Json?     @default("[]")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  schedules ScheduledTaskSchedule[]
+
+  @@index([tenantId])
+  @@index([createdBy])
+  @@index([startFrom])
+  @@index([until])
+}
+
+model ScheduledTaskSchedule {
+  id              String   @id @default(cuid())
+  tenantId        String  
+  scheduledTaskId String
+  every           Int?
+  period          String  
+  at              String  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  scheduledTask ScheduledTask @relation(fields: [scheduledTaskId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([scheduledTaskId])
+  @@index([period])
+}
+
+// ============================================================================
+// ALERT MODELS
+// ============================================================================
+
+model AlertRequest {
+  id               String   @id
+  tenantId         String  
+  requestTime      DateTime
+  responseExpected Boolean
+  taskId           String? 
+  data             Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  alertResponse AlertResponse?
+
+  @@unique([tenantId, id])
+  @@index([tenantId])
+  @@index([requestTime])
+  @@index([responseExpected])
+  @@index([taskId])
+}
+
+model AlertResponse {
+  id             String   @id
+  tenantId       String  
+  alertRequestId String   @unique
+  responseTime   DateTime
+  response       String  
+  data           Json
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  alertRequest AlertRequest @relation(fields: [alertRequestId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([alertRequestId])
+  @@index([responseTime])
+  @@index([response])
+}
+
+model Alert {
+  id           String    @id @default(cuid())
+  tenantId     String   
+  alertId      String   
+  category     String   
+  tier         String   
+  message      String   
+  acknowledged Boolean   @default(false)
+  respondedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([tenantId, alertId])
+  @@index([tenantId])
+  @@index([alertId])
+  @@index([category])
+  @@index([tier])
+  @@index([acknowledged])
+  @@index([respondedAt])
+}
+
+// ============================================================================
+// USER & AUTHORIZATION MODELS
+// ============================================================================
+
+model User {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  username  String  
+  isAdmin   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  roles UserRole[]
+
+  @@unique([tenantId, username])
+  @@index([tenantId])
+  @@index([username])
+  @@index([isAdmin])
+}
+
+model Role {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  permissions ResourcePermission[]
+  users       UserRole[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model UserRole {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, userId, roleId])
+  @@index([tenantId])
+  @@index([userId])
+  @@index([roleId])
+}
+
+model ResourcePermission {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  authzGrp  String  
+  roleId    String
+  action    String  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, authzGrp, roleId, action])
+  @@index([tenantId])
+  @@index([authzGrp])
+  @@index([roleId])
+  @@index([action])
+}
+
+// ============================================================================
+// BUILDING & INFRASTRUCTURE MODELS
+// ============================================================================
+
+model BuildingMap {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model DoorState {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model LiftState {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model DispenserState {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model IngestorState {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+model Beacon {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  name      String  
+  data      Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@index([name])
+}
+
+// ============================================================================
+// DELIVERY ALERT MODELS
+// ============================================================================
+
+model DeliveryAlert {
+  id        String   @id @default(cuid())
+  tenantId  String  
+  alertId   String  
+  category  String  
+  tier      String  
+  message   String  
+  data      Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([tenantId, alertId])
+  @@index([tenantId])
+  @@index([alertId])
+  @@index([category])
+  @@index([tier])
+}

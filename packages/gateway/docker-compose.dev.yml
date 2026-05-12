@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: rmf-gateway-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: rmf
+      POSTGRES_PASSWORD: rmf_dev_pass
+      POSTGRES_DB: rmf_gateway_dev
+    ports:
+      - "5434:5432"
+    volumes:
+      - rmf_gateway_pgdata:/var/lib/postgresql/data
+
+volumes:
+  rmf_gateway_pgdata:
